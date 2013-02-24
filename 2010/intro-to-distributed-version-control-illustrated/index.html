@@ -1,0 +1,365 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+    <head>
+        <title>分散バージョン管理入門 (イラスト入り) - tcha.org</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <link rel="stylesheet" type="text/css" href="/assets/style.css" media="screen">
+        <link rel="alternate" type="application/atom+xml" title="tcha.org Blog" href="/blog.atom">
+        <meta name="generator" content="nanoc 3.1.0">
+    </head>
+    <body>
+        <div id="sitenav">
+            <a href="/blog/">Blog</a>
+            | <a href="/about/">About</a>
+        </div>
+        <div id="main">
+            
+            <div id="breadcrumbs"><a href="/">tcha.org</a> »</div>
+            
+
+            
+<h1>分散バージョン管理入門 (イラスト入り)</h1>
+
+
+
+
+<address class="head">
+    <a href="http://betterexplained.com/about/">Kalid Azad</a>、 2007 年 10 月 15 日、 <a href="http://betterexplained.com/articles/intro-to-distributed-version-control-illustrated/">原文 (original post)</a>
+    <a href="http://b.hatena.ne.jp/append?http://tcha.org/2010/intro-to-distributed-version-control-illustrated/"><img src="http://b.hatena.ne.jp/images/append.gif" width="16" height="12" alt="はてなブックマークへ追加" title="はてなブックマークへ追加"></a>
+<a href="http://b.hatena.ne.jp/entry/http://tcha.org/2010/intro-to-distributed-version-control-illustrated/"><img src="http://b.hatena.ne.jp/entry/image/http://tcha.org/2010/intro-to-distributed-version-control-illustrated/" alt="はてなブックマーク - 分散バージョン管理入門 (イラスト入り)" title="はてなブックマーク - 分散バージョン管理入門 (イラスト入り)"></a>
+
+    <a href="http://delicious.com/save" onclick="window.open('http://delicious.com/save?v=5&noui&jump=close&url='+encodeURIComponent('http://tcha.org/2010/intro-to-distributed-version-control-illustrated/')+'&title='+encodeURIComponent('分散バージョン管理入門 (イラスト入り)'),'delicious', 'toolbar=no,width=550,height=550'); return false;"><img src="http://static.delicious.com/img/delicious.small.gif" height="10" width="10" alt="Bookmark this on Delicious" title="Bookmark this on Delicious"></a>
+
+</address>
+
+
+
+            <p><img src="http://betterexplained.com/wp-content/uploads/version_control/distributed/distributed_logo.png" alt="" /></p>
+
+<p>従来のバージョン管理は、ファイルをバックアップ・追跡・同期するのに役立った。
+分散バージョン管理を使うと、変更内容を共有するのが楽になる。
+さぁ、両方の長所を活かすんだ。簡単なマージと一括管理されたリリースを。</p>
+
+<h2>分散だって? これまでのバージョン管理で何がまずいの?</h2>
+
+<p>別に…。 さっ、気を取り戻したければ、 <a href="http://betterexplained.com/articles/a-visual-guide-to-version-control/">バージョン管理へのビジュアルガイド(英語)</a> を読んで。
+もちろん、「古くさい」システムを使っているとバカにする人も<em>いる</em>だろう。
+けれど、私はそれで全然かまわないと思う。
+<em>どんな</em>バージョン管理システム(VCS)を使うにしても、プロジェクトにとっては前向きな一歩なんだから。</p>
+
+<p>集中型バージョン管理システムは 1970 年頃に現れた。 その頃プログラマーには、シンクライアントと
+“big iron” と称されたメインフレームがあった。 (当時で贅沢な
+<a href="http://ja.wikipedia.org/wiki/System/360">8 ビットが 1 バイト</a> のマシンが好きに<em>なれない</em>なんてことがあるだろうか?)</p>
+
+<p><strong>集中型は単純</strong>で、まず最初に考案されたのがこれだ。
+みんなが一ヶ所にチェックイン・チェックアウトする。
+これは、本の上に落書きできるようになった図書館みたいなもんだ。</p>
+
+<p>このモデルでは、 <strong>バックアップ・取り消し・同期</strong>については上手くいくけど、
+複数人で変更点を<strong>マージ・ブランチ</strong>するには向いていない。
+プロジェクトが大きくなるにつれて、機能をブロックに分割し、
+隔離した状態で開発やテストを行い、変更は緩やかにメインラインへマージしたくなるだろう。
+けれど、ブランチが厄介なもんだから、現実には新機能は巨大なチェックインになってしまう。
+これでは変更内容が間違っていたと分かっても、問題に対処し解決するのは困難だ。</p>
+
+<p>もちろん、集中型システムでも以前からマージは「可能」だ。けれど、簡単ではない。
+自分でマージを追跡して、同じ変更を繰り返してしまわないようにする必要があるんだ。
+分散型システムはブランチとマージを楽にしてくれる。分散型はそれに頼っているからね。</p>
+
+<h2>ちょっと図をいくつか</h2>
+
+<p>他のチュートリアルでは、具体的なテキストコマンドをたっぷり用意しているけど、ここではイメージを話そう。
+少し気分を戻して、開発者は典型的な VCS を使っていて、中央リポジトリへアクセスするとしよう。</p>
+
+<p><img src="http://betterexplained.com/wp-content/uploads/version_control/distributed/centralized_example.png" alt="" /></p>
+
+<p>全員が同期を取ってからメイントランクへチェックインする。
+Sue は soup を、 Joe は juice を、 Eve は eggs を追加する。</p>
+
+<p>Sue の変更は、メインへ入るまで他の人が目にすることはない。
+まぁ、理論上 Sue は別ブランチを作って、他の人に変更をテストしてもらうことが<em>できなくはない</em>けれど、
+従来の VCS でそうするのは面倒だ。</p>
+
+<h2>分散バージョン管理システム (DVCS)</h2>
+
+<p><strong>分散</strong>モデルでは、開発者には自分専用のリポジトリがある。
+Sue の変更は<strong>彼女のローカルリポジトリ</strong>に存在し、 必要に応じて Joe や Eve と共有できる。</p>
+
+<p><img src="http://betterexplained.com/wp-content/uploads/version_control/distributed/distributed_example.png" alt="" /></p>
+
+<p>けれど、リングリーダー無しでは大混乱してしまわないかな? いいや、
+必要なら全員が共通リポジトリへ変更を送りつける(push)ようにすればいい。
+上の中央リポジトリのようにね。
+このフランケンシュタイン・リポジトリには Sue と Joe と Eve の変更が入っている。</p>
+
+<p><strong>分散バージョン管理は、もっと別の名前のほうが良かったと思う。</strong>
+例えば、「独立」、「連合」、「ピアツーピア(P2P)」みたいな。
+「分散」という言葉からは分散コンピューティングを連想してしまうし、
+そこでは作業はグリッドマシン間で分割される。
+(<a href="http://setiathome.berkeley.edu/">SETI@home</a> の信号探索や <a href="http://folding.stanford.edu/">たんぱく質の折り畳み</a> のように。)</p>
+
+<p>DVCS は Seti@home のようなものではない。各ノードは完全に独立しており、
+共有するかしないかは自由だ。(Seti では結果を送り返さなくちゃならない。)</p>
+
+<h2>主な概念を 5 分で</h2>
+
+<p>基本をここで。もし興味を持ったなら、パッチ理論についての <a href="http://en.wikibooks.org/wiki/Understanding_darcs/Patch_theory">本(英語)</a> がある。</p>
+
+<p><strong>コア概念</strong></p>
+
+<ul>
+<li>集中型バージョン管理は、 <strong>ファイルの同期・追跡・バックアップ</strong>
+を念頭に置いている。</li>
+<li>分散バージョン管理は、 <strong>変更の共有</strong> を重視している。
+変更にはそれぞれ <a href="http://betterexplained.com/articles/the-quick-guide-to-guids/">GUID や一意の識別子</a> がつく。</li>
+<li>変更の <strong>記録・ダウンロード・適用</strong> は、全て別のステップ。
+(集中型システムでは、これらがいっぺんに起こる。)</li>
+<li><strong>分散型システムでは、レイアウトは強制されない。</strong>
+「集中管理」された場所を作ることもできるし、各々を対等にしておいても構わない。</li>
+</ul>
+
+
+<p><strong>新しい用語</strong></p>
+
+<ul>
+<li><strong>push</strong>: 変更を他のリポジトリへ送りつける (許可が必要な場合あり)</li>
+<li><strong>pull</strong>: 変更をリポジトリから取り込む</li>
+</ul>
+
+
+<p><strong>主なメリット</strong></p>
+
+<ul>
+<li><strong>みんな自分のサンドボックスを持っている。</strong> 変更を加えたり元に戻したり、
+すべて自分のローカルマシンで行える。もう、巨大なチェックインなどあり得ない。
+途中経過が自分のリポジトリにあるんだから。</li>
+<li><strong>オフラインで動く。</strong> 変更を共有する時だけオンラインになればよい。
+つまり、「サーバー」がダウンしてるとか飛行機に乗っているとか関係なしで、
+ローカルマシン上で自由にチェックインや取り消しができるってことだ。</li>
+<li><strong>速い。</strong> 差分(diff)・コミット・取り消しは全てローカルで片付く。
+1年前の古いリビジョンであっても、当てにならないネットワークやサーバー問い合わせは必要ない。</li>
+<li><strong>変更を上手く扱える。</strong> 分散バージョン管理システムは、変更の共有を中心に<em>据えて</em>いる。
+変更には全て GUID が振られており、追跡しやすくなっている。</li>
+<li><strong>ブランチとマージが簡単。</strong> 開発者がみんな「自分のブランチ」を持っているから、
+変更を共有することは、逆方向に統合してるように思えるだろう。けれど、 GUID のおかげで、
+変更の組み合わせと重複回避は自動的になされる。</li>
+<li><strong>管理が楽。</strong> 分散バージョン管理システムは、動かすのが簡単だ。
+「24 時間稼動」のサーバーソフトをインストールする必要がない。
+同様に、 DVCS では新しいユーザーの「追加」も必須ではない。 pull 元の URL を決めるだけでいい。
+つまり、大きなプロジェクトでの政治的な頭痛の種から逃れられるということだ。</li>
+</ul>
+
+
+<p><strong>主なデメリット</strong></p>
+
+<ul>
+<li><strong>依然バックアップは必要。</strong> 他のマシンに自分の変更があるから、それが「バックアップ」だと言う人もいるけれど、
+私はそうは思わない。そのマシンがあなたの変更を受け入れていなかったら?
+そのマシンがオフラインになってから、あなたが別の変更を行ったら? DVCS であっても、
+「念のために」変更を push しておくマシンは必要だ。
+(Subversion では、大抵メインリポジトリを保存しておく別マシンを用意するよね。
+DVCS でも同じようにして。)</li>
+<li><strong>本当のところ「最新バージョン」は無い。</strong> 中央リポジトリがなければ、
+最新バージョンが Sue のものか、あるいは Joe か、 Eve か、すぐには分からない。
+なお、中央リポジトリがあれば、最新の「安定版」も明確になる。</li>
+<li><strong>本当の意味でリビジョン番号は無い。</strong> リポジトリにはそれぞれ、変更に応じた固有のリビジョン番号がある。
+つまり、リビジョン番号の代わりに、変更番号を引用するということだ。
+<em>すみません、 fa33e7b の変更はありますか?</em> (ID がひどい GUID だってことを忘れないで。)
+幸い、有意義な名前でリリースにタグづけすることができる。</li>
+</ul>
+
+
+<h2>Mercurial クイックスタート</h2>
+
+<p>Mercurial は高速かつ分かりやすい DVCS だ。ニックネームは hg で、これは水銀(Mercury)の元素記号から取られた。</p>
+
+<pre><code>cd project
+hg init                                (リポジトリをここに作成)
+hg add list.txt                        (ファイルを追跡開始)
+hg commit -m "Added file"              (ファイルをローカルリポジトリへチェックイン)
+hg log                                 (履歴を見る ... GUID が振られている)
+
+チェンジセット:   0:55bbcb7a4c24
+ユーザ:           Kalid@kazad-laptop
+日付:             Sun Oct 14 21:36:18 2007 -0400
+要約:             Added file
+
+[ファイルを編集]
+hg revert list.txt                 (直前のバージョンへ戻す)
+
+hg tag v1.0                        (このバージョンをタグづけ)
+[ファイルを編集]
+hg update -C v1.0                  (以前のタグづけされたバージョンへ「更新(update)」 ... -C はローカルコピーを強制的に上書きする)
+</code></pre>
+
+<p>Mercurial がディレクトリを初期化すると、このようになる。</p>
+
+<p><img src="http://betterexplained.com/wp-content/uploads/version_control/distributed/distributed_repo_layout.png" alt="" /></p>
+
+<p>ここにあるのは、</p>
+
+<ul>
+<li><strong>作業コピー</strong>。 あなたが今編集中のファイル。</li>
+<li><strong>リポジトリ</strong>。 パッチとメタデータ(コメント、 GUID 、日付など)が全部入っているディレクトリ
+(Mercurial では .hg)。
+中央サーバーが無いので、データはいつも手元にあるわけだ。</li>
+</ul>
+
+
+<p>この記事の分散リポジトリ例では、 Sue、 Joe、 Eve にそれぞれ自分のリポジトリがあって、
+その中に独自のリビジョン履歴がある。</p>
+
+<h2>更新とマージを理解する</h2>
+
+<p>DVCS を学ぶ時に、いくつか勘違いしそうになったことがある。
+まず、更新が数ステップを経るということ。</p>
+
+<ul>
+<li>変更をリポジトリへ<strong>取り込み</strong> (push または pull)</li>
+<li>変更をファイルへ<strong>適用</strong> (update または merge)</li>
+<li>新しいバージョンを<strong>保存</strong> (commit)</li>
+</ul>
+
+
+<p>次に、変更に応じて、 更新(update)とマージ(merge)を使い分けること。</p>
+
+<ul>
+<li><strong>更新(update)</strong> は曖昧さが無い時に起こる。例えば、
+あなただけが編集したファイルの変更を私が pull した場合。
+重複した変更が無いから、
+ファイルは最新リビジョンへ移動するだけだ。</li>
+<li><strong>マージ(merge)</strong> は変更がぶつかった時に必要だ。
+2 人がファイルを編集したら、最終的に 2 つの「ブランチ」(つまり、別々の世界)ができる。
+一方の世界には私の変更が、他方にはあなたの変更がある。この場合、 (恐らく)
+変更を 1 つの世界へマージしたいだろう。</li>
+</ul>
+
+
+<p>DVCS でいとも簡単にブランチが現れマージされるということを、
+私はまだはっきり理解できていない。</p>
+
+<p><img src="http://betterexplained.com/wp-content/uploads/version_control/distributed/distributed_merge.png" alt="" /></p>
+
+<p>このケースでは、 (+Soup) と (+Juice) が共通の親(「Milk」だけを含むリスト)
+に対する変更であるため、マージが必要だ。 Joe がファイルをマージすると、
+Sue はいつもの「pull と update」を実行するだけで、 Joe から連結されたファイルを取得できる。
+彼女が自分の手で再度マージする必要はない。</p>
+
+<p>Mercurial ではこのようにする。</p>
+
+<pre><code>hg incoming ../another-dir  (pull 待ちの変更をチェック)
+hg pull ../another-dir      (変更をダウンロード)
+
+hg update                   (変更を実際に適用...)
+hg merge                    (... または、必要に応じてマージ)
+
+hg commit                   (マージしたファイルをチェックイン ... ブランチを結合)
+</code></pre>
+
+<p>そう、「pull-merge-commit」サイクルは長い。運良く、 Mercurial
+には一連のコマンドをひとつにしたショートカットがある。 これは複雑そうに見えるけれど、
+Subversion でマージを手作業で扱うよりは<strong>ずっと</strong>簡単だ。</p>
+
+<p><strong>マージはたいてい自動だ。</strong> 衝突が見つかっても、大体はすぐに解決される。
+Mercurial はすべての変更について親子関係を追跡しているんだ
+(さっきのマージされたリスト&lt;訳注: 「Milk Juice Soup」のこと>には親が 2 つある)。 「ヘッド」 —
+つまり各ブランチの最新の変更についても同様だ。マージ前には 2 つヘッドがあり、マージ後ひとつになる。</p>
+
+<h2>分散型プロジェクトをまとめる</h2>
+
+<p>分散型プロジェクトをまとめ上げる方法をひとつ示そう。</p>
+
+<p><img src="http://betterexplained.com/wp-content/uploads/version_control/distributed/distributed_push_pull.png" alt="" /></p>
+
+<p>Sue と Joe と Eve は共通のブランチへチェックインする。
+ちょっとした<strong>「仲間うちビルド(buddy build)」</strong>については、互いにパッチをやり取りする。
+<em>ねぇ、ちょっと、このパッチを試してくんない?</em>
+<em>実験版ブランチへ push する前にちゃんと動くか確認しておきたいんだ。</em></p>
+
+<p>その後、メンテナーは変更をレビューし、実験版ブランチから安定版(stable)ブランチへ pull するだろう。
+このブランチに最新リリースがあるんだ。
+分散 VCS は、変更を隔離しつつも、集中型システムのような「単一ソース」を提供するのに便利だ。
+開発モデルは様々で、「pull のみ」(メンテナーが何を取り込むか決定する Linux 型開発モデル)
+から、「共用 push」(集中型システムのように振る舞う)まで多種多様だ。分散 VCS は、
+プロジェクトの運用方法に<strong>柔軟性</strong>をもたらしてくれるんだ。</p>
+
+<h2>最後に実践と痛烈な酷評を</h2>
+
+<p>私は DVCS 初心者だけど、これまでのところ身につけたことに満足している。私は SVN を好きで使っているけど、
+それでもマージの手軽さに出会うことは実に「楽しい」。 私の提案としては、
+Subversion から始めて、チームでの協力作業の要点を理解した後、
+分散モデルを試してみるのがよいだろう。適切にレイアウトすることで、 DVCS
+は集中型システムでできること全てをこなせるし、その上、手軽なマージの恩恵を受けられるんだ。</p>
+
+<p><strong>オンラインの資料</strong></p>
+
+<ul>
+<li><a href="http://mercurial.selenic.com/wiki/JapaneseMercurial">Mercurial</a> には <a href="http://foozy.bitbucket.org/hgbook-ja/index.ja.html">素晴らしい本</a> がある。 Windows 上では、
+<a href="http://kdiff3.sourceforge.net/">差分・マージソフト</a> か <a href="http://tortoisesvn.tigris.org/TortoiseMerge.html">TortoiseMerge</a> (TortoiseSVN
+をインストールしている場合) が必要だろう。</li>
+<li><a href="http://darcs.net/">Darcs</a> には詳細な <a href="http://en.wikibooks.org/wiki/Understanding_darcs">wikibook</a> がある
+(変更についての数学理論について触れられている)。</li>
+<li><a href="http://git.or.cz/">Git</a> は Linus Torvalds によって開発された。 DVCS についての <a href="http://www.youtube.com/watch?v=4XpnKHJAok8">興味深いレクチャー</a>
+をどうぞ。集中型システムについて激しく非難されるから、覚悟しておこう。
+&lt;訳注: <a href="http://po3a.blogspot.com/2007/12/subversion.html">一部抜粋し日本語に訳した記事</a> がある。></li>
+</ul>
+
+
+<object width="425" height="344">
+<param name="movie" value="http://www.youtube.com/v/4XpnKHJAok8"></param>
+<param name="allowFullScreen" value="true"></param>
+<param name="allowscriptaccess" value="always"></param>
+<embed src="http://www.youtube.com/v/4XpnKHJAok8" type="application/x-shockwave-flash"
+allowscriptaccess="always" allowfullscreen="true" width="425" height="344"></embed>
+</object>
+
+
+<p>注目はココ:</p>
+
+<blockquote><ul>
+<li>「ブランチとマージをやったことあるのはどれくらい? それが楽しかった人はいるかい?」</li>
+<li>「マージするには、前もって 1 週間計画を練って、それから丸 1 日を無駄にするんだ。」</li>
+<li>「5、 10、 15 ぐらいブランチを持ってる人がいる。ひとつは実験用、もう一つは保守用、…だ。」</li>
+<li>「CVS — コミットなんかしないよ。コミットせずに変更を続けるんだ。
+巨大なテストスイートをパスするまでは絶対コミットなんてしない。一直線の変更を続けるんだ、
+それが <em>どうあっても</em> 壊れないって知ってるから。」</li>
+</ul>
+</blockquote>
+
+<p>さぁ、がんばって、宗教戦争に気をつけよう。どんな tip や提案でも、自由にどうぞ。</p>
+
+            
+            <address class="foot">
+                翻訳: <a href="/about/">西原 佑哉</a>
+                、 2010 年 2 月 7 日
+                、 <a href="http://betterexplained.com/articles/intro-to-distributed-version-control-illustrated/">原文 (original post)</a>
+            </address>
+            
+
+            
+            <div id="comments">
+                <h2>コメント</h2>
+                <div id="disqus_thread"></div>
+                <script type="text/javascript" src="http://disqus.com/forums/tchaorg/embed.js"></script>
+                <noscript>
+                    <a href="http://disqus.com/forums/tchaorg/?url=ref">View the discussion thread.</a>
+                </noscript>
+                <a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+            </div>
+            
+        </div>
+
+        <script type="text/javascript"><!--
+            (function() {
+                var links = document.getElementsByTagName('a');
+                var query = '?';
+                for(var i = 0; i < links.length; i++) {
+                    if(links[i].href.indexOf('#disqus_thread') >= 0) {
+                        query += 'url' + i + '=' + encodeURIComponent(links[i].href) + '&';
+                    }
+                }
+                document.write('<script charset="utf-8" type="text/javascript" src="http://disqus.com/forums/tchaorg/get_num_replies.js' + query + '"></' + 'script>');
+            })();
+        // --></script>
+    </body>
+</html>

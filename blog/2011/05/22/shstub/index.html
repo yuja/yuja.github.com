@@ -1,0 +1,116 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+    <head>
+        <title>GDB Stub (sh-stub.c) を組み込んだ時のメモ (SH-4) - tcha.org</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <link rel="stylesheet" type="text/css" href="/assets/style.css" media="screen">
+        <link rel="alternate" type="application/atom+xml" title="tcha.org Blog" href="/blog.atom">
+        <meta name="generator" content="nanoc 3.1.0">
+    </head>
+    <body>
+        <div id="sitenav">
+            <a href="/blog/">Blog</a>
+            | <a href="/about/">About</a>
+        </div>
+        <div id="main">
+            
+            <div id="breadcrumbs"><a href="/">tcha.org</a> » <a href="/blog/">Blog</a> »</div>
+            
+
+            
+<h1>GDB Stub (sh-stub.c) を組み込んだ時のメモ (SH-4)</h1>
+
+
+
+
+<address class="head">
+    2011 年 5 月 22 日
+    <a href="http://b.hatena.ne.jp/append?http://tcha.org/blog/2011/05/22/shstub/"><img src="http://b.hatena.ne.jp/images/append.gif" width="16" height="12" alt="はてなブックマークへ追加" title="はてなブックマークへ追加"></a>
+<a href="http://b.hatena.ne.jp/entry/http://tcha.org/blog/2011/05/22/shstub/"><img src="http://b.hatena.ne.jp/entry/image/http://tcha.org/blog/2011/05/22/shstub/" alt="はてなブックマーク - GDB Stub (sh-stub.c) を組み込んだ時のメモ (SH-4)" title="はてなブックマーク - GDB Stub (sh-stub.c) を組み込んだ時のメモ (SH-4)"></a>
+
+    <a href="http://delicious.com/save" onclick="window.open('http://delicious.com/save?v=5&noui&jump=close&url='+encodeURIComponent('http://tcha.org/blog/2011/05/22/shstub/')+'&title='+encodeURIComponent('GDB Stub (sh-stub.c) を組み込んだ時のメモ (SH-4)'),'delicious', 'toolbar=no,width=550,height=550'); return false;"><img src="http://static.delicious.com/img/delicious.small.gif" height="10" width="10" alt="Bookmark this on Delicious" title="Bookmark this on Delicious"></a>
+
+</address>
+
+
+
+            <p>とりあえずスタックトレースが取れればいいよ、ぐらいのノリなので適当に実装した。
+対象は OS なしの野良ファームで、 CPU は SH7750R 。</p>
+
+<p>やることはざっと 3 つ。</p>
+
+<ul>
+<li><a href="http://www.google.com/codesearch/p?hl=en#Ui7CFR3Zw1Q/pub/gdb/releases/gdb-6.6.tar.bz2%7CaJwt-PYwdI8/gdb-6.6/gdb/sh-stub.c"><code>sh-stub.c</code></a>
+のコンパイル &amp; リンク</li>
+<li><code>gdb_handle_exception()</code></li>
+<li>汎用レジスタを <code>registers[]</code> 配列に格納</li>
+</ul>
+
+
+<p>まず、 <code>sh-stub.c</code> のコンパイル。</p>
+
+<p>文字入出力として <code>getDebugChar()</code> と <code>putDebugChar(c)</code> が用意されているので、
+それにシリアル(UART)入出力処理をつなぐ。とっても簡単。</p>
+
+<p>ついでに、 <code>sh-stub.c</code> のバグ修正。関数のシグネチャが違うのが一カ所と、
+<code>putpacket()</code> が <code>runlen &gt; 100</code> で無限ループする問題に対処した。</p>
+
+<pre><code>if (src[0] != src[runlen] || runlen == 99)
+</code></pre>
+
+<p>次に GDB Stub のコマンドループ <code>gdb_handle_exception()</code> を何らかの方法で叩かせる。
+とりあえずシリアル(UART)のキー入力で GDB Stub モードへ入るようにしてみた。</p>
+
+<p>この時点で GDB と通信できるので、ひとまず確認してみよう。</p>
+
+<pre><code>% sh-hitachi-elf-gdb _build/foo.elf
+(gdb) set remotebaud 115200
+(ggb) set debug remote 1
+(gdb) target remote /dev/ttyS0
+...
+</code></pre>
+
+<p>何か色々出て <code>(gdb)</code> のプロンプトに行けば成功。</p>
+
+<p>最後にレジスタの値を <code>registers[]</code> に格納。
+スタックポインタ <code>R15</code> と <code>PC</code>(プログラムカウンタ) <code>PR</code>(戻り先アドレス)は、
+それぞれ退避レジスタから <code>registers[]</code> へコピーすればよい。</p>
+
+<p>その他の汎用レジスタ <code>Rn</code> は割り込みに入った直後に保存しないといけない。
+C 関数の呼び出しは当然レジスタの値を書き換えるので、大人しくアセンブリで書こう。
+特に重要なのが <code>R14</code> (フレームポインタ)で、
+gcc が関数突入時のスタックポインタ(<code>R15</code>)をここに保存している場合がある。
+<code>R14</code> が変だとバックトレースが途中で壊れる。まぁ、 <code>PC</code> と <code>PR</code> で 2 階層は辿れるけどね。</p>
+
+<p>参考資料:
+- <a href="http://msdn.microsoft.com/ja-jp/library/ms253529%28v=VS.80%29.aspx">Renesas SH-4 コーリング シーケンスの使用 - MSDN</a></p>
+
+            
+
+            
+            <div id="comments">
+                <h2>コメント</h2>
+                <div id="disqus_thread"></div>
+                <script type="text/javascript" src="http://disqus.com/forums/tchaorg/embed.js"></script>
+                <noscript>
+                    <a href="http://disqus.com/forums/tchaorg/?url=ref">View the discussion thread.</a>
+                </noscript>
+                <a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+            </div>
+            
+        </div>
+
+        <script type="text/javascript"><!--
+            (function() {
+                var links = document.getElementsByTagName('a');
+                var query = '?';
+                for(var i = 0; i < links.length; i++) {
+                    if(links[i].href.indexOf('#disqus_thread') >= 0) {
+                        query += 'url' + i + '=' + encodeURIComponent(links[i].href) + '&';
+                    }
+                }
+                document.write('<script charset="utf-8" type="text/javascript" src="http://disqus.com/forums/tchaorg/get_num_replies.js' + query + '"></' + 'script>');
+            })();
+        // --></script>
+    </body>
+</html>

@@ -1,0 +1,152 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+    <head>
+        <title>hgweb にユーザー認証させる - Mercurial Advent Calendar 2012 - tcha.org</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <link rel="stylesheet" type="text/css" href="/assets/style.css" media="screen">
+        <link rel="alternate" type="application/atom+xml" title="tcha.org Blog" href="/blog.atom">
+        <meta name="generator" content="nanoc 3.1.0">
+    </head>
+    <body>
+        <div id="sitenav">
+            <a href="/blog/">Blog</a>
+            | <a href="/about/">About</a>
+        </div>
+        <div id="main">
+            
+            <div id="breadcrumbs"><a href="/">tcha.org</a> » <a href="/blog/">Blog</a> »</div>
+            
+
+            
+<h1>hgweb にユーザー認証させる - Mercurial Advent Calendar 2012</h1>
+
+
+
+
+<address class="head">
+    2012 年 12 月 18 日
+    <a href="http://b.hatena.ne.jp/append?http://tcha.org/blog/2012/12/18/hgwebauth/"><img src="http://b.hatena.ne.jp/images/append.gif" width="16" height="12" alt="はてなブックマークへ追加" title="はてなブックマークへ追加"></a>
+<a href="http://b.hatena.ne.jp/entry/http://tcha.org/blog/2012/12/18/hgwebauth/"><img src="http://b.hatena.ne.jp/entry/image/http://tcha.org/blog/2012/12/18/hgwebauth/" alt="はてなブックマーク - hgweb にユーザー認証させる - Mercurial Advent Calendar 2012" title="はてなブックマーク - hgweb にユーザー認証させる - Mercurial Advent Calendar 2012"></a>
+
+    <a href="http://delicious.com/save" onclick="window.open('http://delicious.com/save?v=5&noui&jump=close&url='+encodeURIComponent('http://tcha.org/blog/2012/12/18/hgwebauth/')+'&title='+encodeURIComponent('hgweb にユーザー認証させる - Mercurial Advent Calendar 2012'),'delicious', 'toolbar=no,width=550,height=550'); return false;"><img src="http://static.delicious.com/img/delicious.small.gif" height="10" width="10" alt="Bookmark this on Delicious" title="Bookmark this on Delicious"></a>
+
+</address>
+
+
+
+            <p><a href="http://connpass.com/event/1431/">Mercurial Advent Calendar 2012</a>
+の 18 日目は、 hgweb とユーザー認証の話をします。</p>
+
+<p>とその前に、 LDAP の bind で認証するコードが <a href="https://gist.github.com/4104596">https://gist.github.com/4104596</a>
+にあります。こんな記事を見るよりコードを読んだほうが早いですよ。</p>
+
+<h2>認証レイヤー</h2>
+
+<p>HTTP で Mercurial リポジトリを公開する場合、ユーザー認証を挟む場所が 2 つあります。</p>
+
+<ol>
+<li>Web サーバー &mdash; Apache の <code>mod_auth_basic</code> や nginx の <code>auth_basic</code> を使う。</li>
+<li>WSGI &mdash; <code>application(environ, start_response)</code> 関数で処理する。</li>
+</ol>
+
+
+<p>簡単なのは 1. です。
+ですから、もちろん 2. を使います。</p>
+
+<h2>テストしやすくする</h2>
+
+<p>コードを書く前に、まず <code>hgweb_wsgi.py</code> をテストしやすくしましょう。</p>
+
+<p>すでに <a href="http://flask.pocoo.org/">Flask</a> はインストールされていることと思いますので、
+Flask と一緒にインストールされた <a href="http://werkzeug.pocoo.org/">Werkzeug</a>
+を使ってみます。</p>
+
+<pre><code>#!/usr/bin/env python
+from mercurial import hgweb
+application = hgweb.hgwebdir('hgweb.config')
+
+if __name__ == '__main__':
+    from werkzeug import serving
+    serving.run_simple('localhost', 8000, application,
+                       use_debugger=True, use_reloader=True)
+</code></pre>
+
+<p>これだけです。
+<code>hgweb_wsgi.py</code> を直接実行できて、例外でデバッガが起動するようになりました。</p>
+
+<h2>401 Unauthorized をフックする</h2>
+
+<p>クライアントへ認証を要求するには、 <code>401 Unauthorized</code> レスポンスに <code>WWW-Authenticate</code>
+をのせる必要があります。
+hgweb は認証が必要な場面で <code>401</code> を返しますが、
+<code>WWW-Authenticate</code> ヘッダがついていません。 hgweb が認証の手段を知らないためです。</p>
+
+<p><a href="https://wsgi.readthedocs.org/en/latest/specifications/simple_authentication.html">A very basic description of authentication opportunities in WSGI</a>
+を参考にレスポンスヘッダをのせます。</p>
+
+<pre><code>hgapp = hgweb.hgwebdir('hgweb.config')
+
+def application(environ, start_response):
+    def wrapped_start_response(status, headers, exc_info=None):
+        if status.startswith('401'):
+            realm = 'Mercurial Repository'
+            headers.append(('WWW-Authenticate', 'Basic realm="%s"' % realm))
+        return start_response(status, headers, exc_info)
+
+    return hgapp(environ, wrapped_start_response)
+</code></pre>
+
+<h2>応答をみる</h2>
+
+<p>Basic 認証要求に対して、クライアントは <code>HTTP_AUTHORIZATION</code> ヘッダで応答します。
+ここでやるべきは、認証データを検証して <code>REMOTE_USER</code> を渡すことです。
+hgweb が <code>REMOTE_USER</code> をもとに操作を「認可」します。</p>
+
+<pre><code>from werkzeug import http
+
+def check_auth(username, password):
+    return {'hoge': 'fuga'}.get(username) == password
+
+def application(environ, start_response):
+    auth = http.parse_authorization_header(environ.pop('HTTP_AUTHORIZATION', None))
+    if auth and check_auth(auth.username, auth.password):
+        environ['REMOTE_USER'] = auth.username
+    ...
+</code></pre>
+
+<p>あとは、 <code>check_auth()</code> を真面目に実装するだけですね。</p>
+
+<h2>最後に</h2>
+
+<p>認証が必要かどうかを hgweb が判断してくれるので楽です。
+Apache の <code>mod_auth_basic</code> を使うと、そうは行きませんね。</p>
+
+            
+
+            
+            <div id="comments">
+                <h2>コメント</h2>
+                <div id="disqus_thread"></div>
+                <script type="text/javascript" src="http://disqus.com/forums/tchaorg/embed.js"></script>
+                <noscript>
+                    <a href="http://disqus.com/forums/tchaorg/?url=ref">View the discussion thread.</a>
+                </noscript>
+                <a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+            </div>
+            
+        </div>
+
+        <script type="text/javascript"><!--
+            (function() {
+                var links = document.getElementsByTagName('a');
+                var query = '?';
+                for(var i = 0; i < links.length; i++) {
+                    if(links[i].href.indexOf('#disqus_thread') >= 0) {
+                        query += 'url' + i + '=' + encodeURIComponent(links[i].href) + '&';
+                    }
+                }
+                document.write('<script charset="utf-8" type="text/javascript" src="http://disqus.com/forums/tchaorg/get_num_replies.js' + query + '"></' + 'script>');
+            })();
+        // --></script>
+    </body>
+</html>

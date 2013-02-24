@@ -1,0 +1,109 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+    <head>
+        <title>PyQt/PySide: QObject のスコープに注意 - tcha.org</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <link rel="stylesheet" type="text/css" href="/assets/style.css" media="screen">
+        <link rel="alternate" type="application/atom+xml" title="tcha.org Blog" href="/blog.atom">
+        <meta name="generator" content="nanoc 3.1.0">
+    </head>
+    <body>
+        <div id="sitenav">
+            <a href="/blog/">Blog</a>
+            | <a href="/about/">About</a>
+        </div>
+        <div id="main">
+            
+            <div id="breadcrumbs"><a href="/">tcha.org</a> » <a href="/blog/">Blog</a> »</div>
+            
+
+            
+<h1>PyQt/PySide: QObject のスコープに注意</h1>
+
+
+
+
+<address class="head">
+    2011 年 6 月 19 日
+    <a href="http://b.hatena.ne.jp/append?http://tcha.org/blog/2011/06/19/pyqt-scope/"><img src="http://b.hatena.ne.jp/images/append.gif" width="16" height="12" alt="はてなブックマークへ追加" title="はてなブックマークへ追加"></a>
+<a href="http://b.hatena.ne.jp/entry/http://tcha.org/blog/2011/06/19/pyqt-scope/"><img src="http://b.hatena.ne.jp/entry/image/http://tcha.org/blog/2011/06/19/pyqt-scope/" alt="はてなブックマーク - PyQt/PySide: QObject のスコープに注意" title="はてなブックマーク - PyQt/PySide: QObject のスコープに注意"></a>
+
+    <a href="http://delicious.com/save" onclick="window.open('http://delicious.com/save?v=5&noui&jump=close&url='+encodeURIComponent('http://tcha.org/blog/2011/06/19/pyqt-scope/')+'&title='+encodeURIComponent('PyQt/PySide: QObject のスコープに注意'),'delicious', 'toolbar=no,width=550,height=550'); return false;"><img src="http://static.delicious.com/img/delicious.small.gif" height="10" width="10" alt="Bookmark this on Delicious" title="Bookmark this on Delicious"></a>
+
+</address>
+
+
+
+            <p>PyQt4 や PySide は C++ で GUI を書く気がなくなるぐらい便利なライブラリなのだけど、
+厄介な問題もある。例えば、変数のスコープ。</p>
+
+<p>Qt は C++ のライブラリなので、関数内で作った変数(自動変数)がスコープを抜ける時に
+削除されることを上手く利用している。</p>
+
+<pre><code>int Foo::foo()
+{
+    QDialog dlg(this);
+    return dlg.exec();
+}
+</code></pre>
+
+<p>上のコードで QDialog のインスタンスは <code>exec()</code> 後に勝手に消えてくれるのだが、
+Python ではそうは行かない。</p>
+
+<pre><code>def foo(self):
+    dlg = QDialog(self)
+    return dlg.exec_()
+</code></pre>
+
+<p>親ウィジェットの <code>self</code> が <code>dlg</code> を所有してしまうため、 <code>dlg</code> は GC の対象にならない。</p>
+
+<p>次は segfault するかもしれない例。</p>
+
+<pre><code>def draw():
+    pixmap = QPixmap()
+    painter = QPainter(pixmap)
+    # ... hack hack ...
+    painter.end()
+    return pixmap
+</code></pre>
+
+<p><code>painter.end()</code> の前に例外が起きて <code>draw()</code> を抜けると、 <code>pixmap</code> と <code>painter</code>
+は GC の対象になる。 <code>pixmap</code> が先に削除されたりすると大変だ。</p>
+
+<pre><code>QPaintDevice: Cannot destroy paint device that is being painted
+Segmentation fault
+# gdb ;)
+</code></pre>
+
+<p><code>painter</code> のデストラクタで <code>painter.end()</code> しようとしても <code>pixmap</code>
+が無くなっているのだから。</p>
+
+            
+
+            
+            <div id="comments">
+                <h2>コメント</h2>
+                <div id="disqus_thread"></div>
+                <script type="text/javascript" src="http://disqus.com/forums/tchaorg/embed.js"></script>
+                <noscript>
+                    <a href="http://disqus.com/forums/tchaorg/?url=ref">View the discussion thread.</a>
+                </noscript>
+                <a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+            </div>
+            
+        </div>
+
+        <script type="text/javascript"><!--
+            (function() {
+                var links = document.getElementsByTagName('a');
+                var query = '?';
+                for(var i = 0; i < links.length; i++) {
+                    if(links[i].href.indexOf('#disqus_thread') >= 0) {
+                        query += 'url' + i + '=' + encodeURIComponent(links[i].href) + '&';
+                    }
+                }
+                document.write('<script charset="utf-8" type="text/javascript" src="http://disqus.com/forums/tchaorg/get_num_replies.js' + query + '"></' + 'script>');
+            })();
+        // --></script>
+    </body>
+</html>

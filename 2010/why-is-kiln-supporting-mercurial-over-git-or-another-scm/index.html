@@ -1,0 +1,157 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+    <head>
+        <title>Kiln が Git (や他の SCM)ではなく Mercurial をサポートする理由 - tcha.org</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <link rel="stylesheet" type="text/css" href="/assets/style.css" media="screen">
+        <link rel="alternate" type="application/atom+xml" title="tcha.org Blog" href="/blog.atom">
+        <meta name="generator" content="nanoc 3.1.0">
+    </head>
+    <body>
+        <div id="sitenav">
+            <a href="/blog/">Blog</a>
+            | <a href="/about/">About</a>
+        </div>
+        <div id="main">
+            
+            <div id="breadcrumbs"><a href="/">tcha.org</a> »</div>
+            
+
+            
+<h1>Kiln が Git (や他の SCM)ではなく Mercurial をサポートする理由</h1>
+
+
+
+
+<address class="head">
+    <a href="http://kiln.stackexchange.com/users/5/benjamin-pollack">Benjamin Pollack</a>、 2009 年 10 月 24 日、 <a href="http://kiln.stackexchange.com/questions/187/why-is-kiln-supporting-mercurial-over-git-or-another-scm/189#189">原文 (original post)</a>
+    <a href="http://b.hatena.ne.jp/append?http://tcha.org/2010/why-is-kiln-supporting-mercurial-over-git-or-another-scm/"><img src="http://b.hatena.ne.jp/images/append.gif" width="16" height="12" alt="はてなブックマークへ追加" title="はてなブックマークへ追加"></a>
+<a href="http://b.hatena.ne.jp/entry/http://tcha.org/2010/why-is-kiln-supporting-mercurial-over-git-or-another-scm/"><img src="http://b.hatena.ne.jp/entry/image/http://tcha.org/2010/why-is-kiln-supporting-mercurial-over-git-or-another-scm/" alt="はてなブックマーク - Kiln が Git (や他の SCM)ではなく Mercurial をサポートする理由" title="はてなブックマーク - Kiln が Git (や他の SCM)ではなく Mercurial をサポートする理由"></a>
+
+    <a href="http://delicious.com/save" onclick="window.open('http://delicious.com/save?v=5&noui&jump=close&url='+encodeURIComponent('http://tcha.org/2010/why-is-kiln-supporting-mercurial-over-git-or-another-scm/')+'&title='+encodeURIComponent('Kiln が Git (や他の SCM)ではなく Mercurial をサポートする理由'),'delicious', 'toolbar=no,width=550,height=550'); return false;"><img src="http://static.delicious.com/img/delicious.small.gif" height="10" width="10" alt="Bookmark this on Delicious" title="Bookmark this on Delicious"></a>
+
+</address>
+
+
+
+            <p>Kiln が Mercurial を選択した理由を疑問に思うなら、つまり質問は 2 つあるということです。</p>
+
+<ol>
+<li> Kiln が DVCS ベースな理由は?</li>
+<li> Kiln があえて Mercurial を選択した理由は?</li>
+</ol>
+
+
+<h2>Kiln が DVCS ベースな理由は?</h2>
+
+<p><strong>DVCS が本物のブランチをサポートしている</strong>からです。
+ご存知のとおり、 Subversion や CVS の様なツールでブランチをマージしようとすると、
+まず間違いなくかなりイライラさせられてしまいます。
+Subversion 1.5 以前はマージ履歴を全く記録しておらず、
+また、最新版でさえそのメタデータを上手く活用できていないため、
+マージはいつも途方もない労力を要し、間違いだらけのプロセスで終わるのが落ちだからです。
+こうして、ブランチを維持することは技術的に可能であったとしても、
+とてつもない苦痛を伴うため、開発者はたいてい全力でブランチを避けるようになるでしょう。
+その代わりにどうしているかと言うと、
+開発者は仕方なく trunk で常に開発を進め、
+ごくたまに「ブランチ」を作ります。
+それはポイントリリースのスナップショットにすぎませんが。</p>
+
+<p>Git、 Mercurial、 Bazaar など DAG ベースの現代的な DVCS は全て、
+いつどこで最後にマージしたかを正確に覚えています。その履歴には特別な「マージ」オブジェクトがあり、
+さらには<em>マージした履歴も全て維持しているのです</em>。
+結果として、 DVCS は Subversion
+の様なツールがゲロを吐く複雑なマージをさらっと自動的に行うことができ、
+また、あなたはいついかなる時点においても、ブランチをマージしたかどうかをさっと確かめることが可能です。</p>
+
+<p>ところで、それがなぜ重要なんでしょう? それは、現実のソフトウェア会社においては、
+製品を複数バージョン同時にメンテする必要があるためです。 バージョン 2.0 を出荷したからといって、
+(普通は)バージョン 1.0 のサポートを打ちきるわけにはいかないでしょう。
+Subversion のような古典的な VCS では、
+アクティブなブランチに対してそれぞれ別々にバグ修正をコミットしていました。
+両方のバージョン間で同じ修正を明示するような印は一切ないですから、
+どの修正がいつマージされたか追跡する方法はありません。ある特定の機能が
+実際に取り込まれているか確認するのは困難です。</p>
+
+<p>一方、 DVCS ではこうです。 マージは簡単です。あなたがマージしたいものをツールが知っているんですから。
+1.0 のバグ修正が最終的に 2.0 に入っていることを確認するのは、
+1.0 のコミットが 2.0 にあることを確かめるぐらいに簡単です。
+同時並行に開発を進めることが、突然すごく簡単になりました。</p>
+
+<p>我々が思うに、これが DVCS の<em>いずれをも</em>すごくクールにしている目玉機能で、
+Subversion や CVS の様なツールから<em>ずば抜けて</em>いる点です。
+そして、 Fog Creek が Kiln を持って DVCS
+支持層に打って出ることにした理由でもあります。</p>
+
+<h2>Kiln が Git など数ある DVCS の中から Mercurial を選択した理由は?</h2>
+
+<p>正直に言います。我々は Git が好きです。 Git はあり得んぐらい高速で、 Ruby コミュニティーに愛され、
+Linux カーネルのような大規模なプロジェクトを扱うのに十分パワフルで、
+GitHub のようなサイトをベースにすごくクールなコミュニティーがあります。
+GitHub は、開発者にとって Facebook のようなものです。</p>
+
+<p>しかし、我々は Mercurial も気に入っています。 Mercurial も Git とほぼ同じぐらい高速で、実に拡張性が高く、
+<a href="http://bitbucket.org/tortoisehg/stable">Linux と Windows 用の素晴らしい GUI</a> があり、
+Firefox や Java のようなかなり規模の大きいプロジェクトを管理し、
+Google Code や Bitbucket を介してすごいコミュニティーがあります。</p>
+
+<p>実のところ、 Mercurial と Git は機能面から見るとかなり近いので、
+正直我々はその間の論争を理解していません。どちらも DAG ベースの DVCS です。
+いずれもぶっ飛んだマージ機能があり、同じギーク向けの機能[1]を備え、
+大きなコミュニティーサポート(Git には Linux、 Ruby、 X が、
+Mercurial には Python、 Java、 Google)があり、 いずれもとんでもなく高速です。
+結局のところ、個人の好みによるんでしょう。</p>
+
+<p>ですから、どちらのツールも間違いなくクールです。実際、あなたがいずれかを気に入っていれば、
+他方も気に入るだろうと我々は確信しています。そして、あなたが Subversion
+のようなツールを使っているなら、どちらかのツールを使うことはとてつもない改善につながるでしょう。
+けれど、 Kiln のベースとして最終的に我々はひとつに絞る必要がありました。
+少なくとも最初のリリースには。そしていろいろと考慮した結果、
+DVCS 初心者にとって Mercurial の方がちょっとだけ使いやすいと思われました。
+そしてそれは Git のパワーを全く犠牲にしません。</p>
+
+<p>我々の立場で重要なことは、 DVCS 革命を導く力になることです。
+利用するツールが正確に何であるかは大して重要でありません。
+我々はちょっとだけ Mercurial びいきであり、他では Git が少し好まれているというだけです。
+DVCS かモノリシックツールかに集中しましょう。あとはそれほどではありません。</p>
+
+<p>[1] ギーク向けの機能とは、例えば、リベース(<code>git rebase</code> と <code>hg rebase</code>)、
+部分的なコミット(Git の index と <code>hg record</code>)、履歴の修正(<code>git rebase --interactive</code>
+と Mercurial の超強力な MQ 機能)、署名つきパッチなどです。
+本当のところ、どちらかのツールにある機能は概ね全て同等な機能が他方にもあります。</p>
+
+            
+            <address class="foot">
+                翻訳: <a href="/about/">西原 佑哉</a>
+                、 2010 年 3 月 20 日
+                、 <a href="http://kiln.stackexchange.com/questions/187/why-is-kiln-supporting-mercurial-over-git-or-another-scm/189#189">原文 (original post)</a>
+            </address>
+            
+
+            
+            <div id="comments">
+                <h2>コメント</h2>
+                <div id="disqus_thread"></div>
+                <script type="text/javascript" src="http://disqus.com/forums/tchaorg/embed.js"></script>
+                <noscript>
+                    <a href="http://disqus.com/forums/tchaorg/?url=ref">View the discussion thread.</a>
+                </noscript>
+                <a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+            </div>
+            
+        </div>
+
+        <script type="text/javascript"><!--
+            (function() {
+                var links = document.getElementsByTagName('a');
+                var query = '?';
+                for(var i = 0; i < links.length; i++) {
+                    if(links[i].href.indexOf('#disqus_thread') >= 0) {
+                        query += 'url' + i + '=' + encodeURIComponent(links[i].href) + '&';
+                    }
+                }
+                document.write('<script charset="utf-8" type="text/javascript" src="http://disqus.com/forums/tchaorg/get_num_replies.js' + query + '"></' + 'script>');
+            })();
+        // --></script>
+    </body>
+</html>

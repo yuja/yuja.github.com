@@ -1,0 +1,124 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+    <head>
+        <title>Qt 4.7.4 を VS2008 でスタティックリンク用にビルドする - tcha.org</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <link rel="stylesheet" type="text/css" href="/assets/style.css" media="screen">
+        <link rel="alternate" type="application/atom+xml" title="tcha.org Blog" href="/blog.atom">
+        <meta name="generator" content="nanoc 3.1.0">
+    </head>
+    <body>
+        <div id="sitenav">
+            <a href="/blog/">Blog</a>
+            | <a href="/about/">About</a>
+        </div>
+        <div id="main">
+            
+            <div id="breadcrumbs"><a href="/">tcha.org</a> » <a href="/blog/">Blog</a> »</div>
+            
+
+            
+<h1>Qt 4.7.4 を VS2008 でスタティックリンク用にビルドする</h1>
+
+
+
+
+<address class="head">
+    2011 年 9 月 18 日
+    <a href="http://b.hatena.ne.jp/append?http://tcha.org/blog/2011/09/18/qt-static-build-msvc/"><img src="http://b.hatena.ne.jp/images/append.gif" width="16" height="12" alt="はてなブックマークへ追加" title="はてなブックマークへ追加"></a>
+<a href="http://b.hatena.ne.jp/entry/http://tcha.org/blog/2011/09/18/qt-static-build-msvc/"><img src="http://b.hatena.ne.jp/entry/image/http://tcha.org/blog/2011/09/18/qt-static-build-msvc/" alt="はてなブックマーク - Qt 4.7.4 を VS2008 でスタティックリンク用にビルドする" title="はてなブックマーク - Qt 4.7.4 を VS2008 でスタティックリンク用にビルドする"></a>
+
+    <a href="http://delicious.com/save" onclick="window.open('http://delicious.com/save?v=5&noui&jump=close&url='+encodeURIComponent('http://tcha.org/blog/2011/09/18/qt-static-build-msvc/')+'&title='+encodeURIComponent('Qt 4.7.4 を VS2008 でスタティックリンク用にビルドする'),'delicious', 'toolbar=no,width=550,height=550'); return false;"><img src="http://static.delicious.com/img/delicious.small.gif" height="10" width="10" alt="Bookmark this on Delicious" title="Bookmark this on Delicious"></a>
+
+</address>
+
+
+
+            <p><a href="/blog/2010/07/18/qt-static-build-mingw/">Qt 4.6.3 を MinGW でスタティックリンク用にビルドする</a>
+から 1 年以上経過し、 Qt のバージョンやインストーラー周りが変わった。
+そこで、久しぶりに Qt のソースをビルドしてみた。</p>
+
+<h2>環境</h2>
+
+<ul>
+<li>Windows XP (32bit)</li>
+<li>Visual Studio 2008 Express</li>
+<li>シャドウビルド (ソースツリーの外でビルド)</li>
+</ul>
+
+
+<h2>手順</h2>
+
+<ol>
+<li><p>ソースコードをインストール</p>
+
+<p>スタートメニューの「Maintain Qt SDK」から、「Qt 4.7.4 Sources」
+をインストールする。楽になったもんだ。</p></li>
+<li><p>configure</p>
+
+<p>まず、 <code>C:\QtSDK\Desktop\Qt\4.7.4\msvc2008_static</code> というフォルダを作る。
+次に、「Visual Studio 2008 コマンドプロンプト」で環境変数をセットアップし、
+<code>configure</code> を実行する。 Perl が必要。</p>
+
+<pre><code> C:\QtSDK\Desktop\Qt\4.7.4\msvc2008_static&gt;set QTDIR=C:\QtSDK\QtSources\4.7.4
+ C:\QtSDK\Desktop\Qt\4.7.4\msvc2008_static&gt;set QMAKESPEC=win32-msvc2008
+ C:\QtSDK\Desktop\Qt\4.7.4\msvc2008_static&gt;%QTDIR%\configure -release
+     -opensource -static -no-stl -no-vcproj
+     -no-qt3support -no-phonon -no-multimedia -no-webkit -no-script -no-scripttools -no-opengl
+     -no-style-plastique -no-style-cleanlooks -no-style-motif -no-style-cde
+     -nomake tools -nomake examples -nomake demos -nomake docs -nomake translations
+</code></pre></li>
+<li><p>ビルド</p>
+
+<pre><code> C:\QtSDK\Desktop\Qt\4.7.4\msvc2008_static&gt;nmake
+</code></pre>
+
+<p>30分強でビルド完了。</p></li>
+<li><p>試しに KDiff3 をビルドしてみる</p>
+
+<pre><code> Z:\work\kdiff3\src-QT4&gt;set QTDIR=C:\QtSDK\Desktop\Qt\4.7.4\msvc2008_static
+ Z:\work\kdiff3\src-QT4&gt;set PATH=%QTDIR%\bin;%PATH%
+ Z:\work\kdiff3\src-QT4&gt;set QMAKESPEC=win32-msvc2008
+ Z:\work\kdiff3\src-QT4&gt;qmake
+ Z:\work\kdiff3\src-QT4&gt;nmake release
+</code></pre></li>
+</ol>
+
+
+<h2>参考</h2>
+
+<ul>
+<li><a href="http://www.formortals.com/build-qt-static-small-microsoft-intel-gcc-compiler/">Building Qt Static (and Dynamic) and Making it Small with GCC, Microsoft Visual Studio, and the Intel Compiler</a></li>
+<li><a href="http://doc.qt.nokia.com/4.7/deployment-windows.html">Qt 4.7: Deploying an Application on Windows</a></li>
+</ul>
+
+
+            
+
+            
+            <div id="comments">
+                <h2>コメント</h2>
+                <div id="disqus_thread"></div>
+                <script type="text/javascript" src="http://disqus.com/forums/tchaorg/embed.js"></script>
+                <noscript>
+                    <a href="http://disqus.com/forums/tchaorg/?url=ref">View the discussion thread.</a>
+                </noscript>
+                <a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+            </div>
+            
+        </div>
+
+        <script type="text/javascript"><!--
+            (function() {
+                var links = document.getElementsByTagName('a');
+                var query = '?';
+                for(var i = 0; i < links.length; i++) {
+                    if(links[i].href.indexOf('#disqus_thread') >= 0) {
+                        query += 'url' + i + '=' + encodeURIComponent(links[i].href) + '&';
+                    }
+                }
+                document.write('<script charset="utf-8" type="text/javascript" src="http://disqus.com/forums/tchaorg/get_num_replies.js' + query + '"></' + 'script>');
+            })();
+        // --></script>
+    </body>
+</html>

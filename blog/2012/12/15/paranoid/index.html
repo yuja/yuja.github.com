@@ -1,0 +1,106 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+    <head>
+        <title>TortoiseHg を疑う - TortoiseHg Advent Calendar 2012 - tcha.org</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <link rel="stylesheet" type="text/css" href="/assets/style.css" media="screen">
+        <link rel="alternate" type="application/atom+xml" title="tcha.org Blog" href="/blog.atom">
+        <meta name="generator" content="nanoc 3.1.0">
+    </head>
+    <body>
+        <div id="sitenav">
+            <a href="/blog/">Blog</a>
+            | <a href="/about/">About</a>
+        </div>
+        <div id="main">
+            
+            <div id="breadcrumbs"><a href="/">tcha.org</a> » <a href="/blog/">Blog</a> »</div>
+            
+
+            
+<h1>TortoiseHg を疑う - TortoiseHg Advent Calendar 2012</h1>
+
+
+
+
+<address class="head">
+    2012 年 12 月 16 日
+    <a href="http://b.hatena.ne.jp/append?http://tcha.org/blog/2012/12/15/paranoid/"><img src="http://b.hatena.ne.jp/images/append.gif" width="16" height="12" alt="はてなブックマークへ追加" title="はてなブックマークへ追加"></a>
+<a href="http://b.hatena.ne.jp/entry/http://tcha.org/blog/2012/12/15/paranoid/"><img src="http://b.hatena.ne.jp/entry/image/http://tcha.org/blog/2012/12/15/paranoid/" alt="はてなブックマーク - TortoiseHg を疑う - TortoiseHg Advent Calendar 2012" title="はてなブックマーク - TortoiseHg を疑う - TortoiseHg Advent Calendar 2012"></a>
+
+    <a href="http://delicious.com/save" onclick="window.open('http://delicious.com/save?v=5&noui&jump=close&url='+encodeURIComponent('http://tcha.org/blog/2012/12/15/paranoid/')+'&title='+encodeURIComponent('TortoiseHg を疑う - TortoiseHg Advent Calendar 2012'),'delicious', 'toolbar=no,width=550,height=550'); return false;"><img src="http://static.delicious.com/img/delicious.small.gif" height="10" width="10" alt="Bookmark this on Delicious" title="Bookmark this on Delicious"></a>
+
+</address>
+
+
+
+            <p><a href="http://connpass.com/event/1504/">TortoiseHg Advent Calendar 2012</a>
+の 15 日目です。今日はエクステンションのお話。</p>
+
+<p>普段コマンドラインの <code>hg</code> に慣れていると、
+TortoiseHg が何をしているか不安になりませんか?</p>
+
+<p>そんな方に朗報です。</p>
+
+<h2>paranoid エクステンション</h2>
+
+<p>ソース: <a href="https://bitbucket.org/yuja/hgext-workarounds/src/tip/hgext/paranoid.py">https://bitbucket.org/yuja/hgext-workarounds/src/tip/hgext/paranoid.py</a></p>
+
+<pre><code>def _runcommand(orig, lui, repo, cmd, fullargs, ui, options, d, cmdpats,
+                cmdoptions):
+    r = ui.promptchoice(_('about to execute: %s\nare you sure? (Y/n)')
+                        % ('hg ' + subprocess.list2cmdline(fullargs)),
+                        (_('&amp;Yes'), _('&amp;No')))
+    if r == 1:
+        raise util.Abort(_('by user request'))
+    return orig(lui, repo, cmd, fullargs, ui, options, d, cmdpats, cmdoptions)
+
+def uisetup(ui):
+    extensions.wrapfunction(dispatch, 'runcommand', _runcommand)
+</code></pre>
+
+<p>見てのとおりです。コマンド実行前に小うるさく確認を出してきよります。</p>
+
+<pre><code>% hg update
+about to execute: hg update
+are you sure? (Y/n) n
+中断: by user request
+</code></pre>
+
+<p>CLI では無意味さ炸裂ですが、 GUI の場合はこんな風になります。</p>
+
+<p><img src="/blog/2012/assets/thg-paranoid.png" alt=""></p>
+
+<h2>まとめ</h2>
+
+<p>これで安心して TortoiseHg を使えますね!</p>
+
+            
+
+            
+            <div id="comments">
+                <h2>コメント</h2>
+                <div id="disqus_thread"></div>
+                <script type="text/javascript" src="http://disqus.com/forums/tchaorg/embed.js"></script>
+                <noscript>
+                    <a href="http://disqus.com/forums/tchaorg/?url=ref">View the discussion thread.</a>
+                </noscript>
+                <a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+            </div>
+            
+        </div>
+
+        <script type="text/javascript"><!--
+            (function() {
+                var links = document.getElementsByTagName('a');
+                var query = '?';
+                for(var i = 0; i < links.length; i++) {
+                    if(links[i].href.indexOf('#disqus_thread') >= 0) {
+                        query += 'url' + i + '=' + encodeURIComponent(links[i].href) + '&';
+                    }
+                }
+                document.write('<script charset="utf-8" type="text/javascript" src="http://disqus.com/forums/tchaorg/get_num_replies.js' + query + '"></' + 'script>');
+            })();
+        // --></script>
+    </body>
+</html>

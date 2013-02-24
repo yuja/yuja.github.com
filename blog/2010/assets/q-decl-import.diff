@@ -1,0 +1,31 @@
+# HG changeset patch
+# Parent 37aee9e2763177aa0307ca5025fd124115789d36
+# User Yuya Nishihara <yuya@tcha.org>
+workaround for link error caused by Q_DECL_IMPORT
+
+http://www.qtcentre.org/threads/31684-Problems-creating-Qt-4.6.3-static-with-MinGw
+
+diff --git a/src/gui/kernel/qapplication.cpp b/src/gui/kernel/qapplication.cpp
+--- a/src/gui/kernel/qapplication.cpp
++++ b/src/gui/kernel/qapplication.cpp
+@@ -138,7 +138,7 @@ static void initResources()
+ 
+ QT_BEGIN_NAMESPACE
+ 
+-Q_DECL_IMPORT extern void qt_call_post_routines();
++Q_CORE_EXPORT void qt_call_post_routines();
+ 
+ int QApplicationPrivate::app_compile_version = 0x040000; //we don't know exactly, but it's at least 4.0.0
+ 
+diff --git a/src/gui/kernel/qwhatsthis.cpp b/src/gui/kernel/qwhatsthis.cpp
+--- a/src/gui/kernel/qwhatsthis.cpp
++++ b/src/gui/kernel/qwhatsthis.cpp
+@@ -143,7 +143,7 @@ QT_BEGIN_NAMESPACE
+     \sa QToolTip
+ */
+ 
+-Q_DECL_IMPORT extern void qDeleteInEventHandler(QObject *o);
++Q_CORE_EXPORT void qDeleteInEventHandler(QObject *o);
+ 
+ class QWhatsThat : public QWidget
+ {

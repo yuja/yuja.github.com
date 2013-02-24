@@ -1,0 +1,172 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+    <head>
+        <title>Git と Mercurial が Subversion より優れている点 - tcha.org</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <link rel="stylesheet" type="text/css" href="/assets/style.css" media="screen">
+        <link rel="alternate" type="application/atom+xml" title="tcha.org Blog" href="/blog.atom">
+        <meta name="generator" content="nanoc 3.1.0">
+    </head>
+    <body>
+        <div id="sitenav">
+            <a href="/blog/">Blog</a>
+            | <a href="/about/">About</a>
+        </div>
+        <div id="main">
+            
+            <div id="breadcrumbs"><a href="/">tcha.org</a> » <a href="/blog/">Blog</a> »</div>
+            
+
+            
+<h1>Git と Mercurial が Subversion より優れている点</h1>
+
+
+
+
+<address class="head">
+    2010 年 2 月 1 日
+    <a href="http://b.hatena.ne.jp/append?http://tcha.org/blog/2010/02/01/dvcs-over-svn/"><img src="http://b.hatena.ne.jp/images/append.gif" width="16" height="12" alt="はてなブックマークへ追加" title="はてなブックマークへ追加"></a>
+<a href="http://b.hatena.ne.jp/entry/http://tcha.org/blog/2010/02/01/dvcs-over-svn/"><img src="http://b.hatena.ne.jp/entry/image/http://tcha.org/blog/2010/02/01/dvcs-over-svn/" alt="はてなブックマーク - Git と Mercurial が Subversion より優れている点" title="はてなブックマーク - Git と Mercurial が Subversion より優れている点"></a>
+
+    <a href="http://delicious.com/save" onclick="window.open('http://delicious.com/save?v=5&noui&jump=close&url='+encodeURIComponent('http://tcha.org/blog/2010/02/01/dvcs-over-svn/')+'&title='+encodeURIComponent('Git と Mercurial が Subversion より優れている点'),'delicious', 'toolbar=no,width=550,height=550'); return false;"><img src="http://static.delicious.com/img/delicious.small.gif" height="10" width="10" alt="Bookmark this on Delicious" title="Bookmark this on Delicious"></a>
+
+</address>
+
+
+
+            <p><a href="http://stackoverflow.com/questions/1218471/for-home-projects-can-mercurial-or-git-or-other-dvcs-provide-more-advantages-o/1218657#1218657">For home projects, can Mercurial or Git (or other DVCS) provide more advantages over Subversion? - Stack Overflow</a>
+より、抄訳。</p>
+
+<p>この記事は Git と Subversion の比較だけど、ここで言っていることは全て Mercurial にもあてはまる。</p>
+
+<blockquote><p><strong>リポジトリの初期化</strong>:</p>
+
+<ul>
+<li><p>git:</p>
+
+<pre><code>  git init
+</code></pre></li>
+<li><p>subversion:</p>
+
+<pre><code>  svnadmin create /path/to/repo
+  svn import http://long.url.to/repo yourwork
+  rm -R yourwork
+  svn checkout http://long.url.to/repo yourwork
+</code></pre></li>
+</ul>
+</blockquote>
+
+<p>うぁー、めんどくせー!!</p>
+
+<blockquote><p><strong>リポジトリとメタデータ</strong>:</p>
+
+<ul>
+<li>git: リポジトリとメタデータを、最上位の .git ディレクトリに保管。</li>
+<li>subversion: リポジトリは別の場所に。メタデータは <strong>各ディレクトリ</strong> の .svn に保管。</li>
+</ul>
+</blockquote>
+
+<p>けっこうウザい。</p>
+
+<blockquote><p><strong>リビジョンの名前・番号</strong>:</p>
+
+<ul>
+<li>git: グローバルにユニークなハッシュ値と、特定リビジョンからの相対値。</li>
+<li>subversion: リビジョン番号。</li>
+</ul>
+</blockquote>
+
+<p>Subversion のほうがパッと見で分かりやすいね。</p>
+
+<blockquote><p><strong>ブランチとマージ</strong>:</p>
+
+<ul>
+<li>git: ブランチの作成とマージは簡単。だって分散バージョン管理はそう設計されているんだから。リネームしても大丈夫。</li>
+<li>subversion(&lt;1.5): ブランチの作成は簡単。マージは死ぬ。</li>
+<li>subversion(>=1.5): svn:mergeinfo があるけど、 Git より複雑。単純な場合しか対処できない。リネームしたらアウト。</li>
+</ul>
+
+
+<p><strong>タグ</strong>:</p>
+
+<ul>
+<li>git: タグは不変。 (訳注) タグのつけ直しは可能。</li>
+<li>subversion: ブランチと同じ。(タグった後で)変更可能。</li>
+</ul>
+</blockquote>
+
+<p>この設計は明らかにクソだ。</p>
+
+<blockquote><p><strong>キーワード展開</strong>:</p>
+
+<ul>
+<li>git: かなり限定されている。だって変更はファイルベースじゃないし。</li>
+<li>subversion: (訳注) CVS レベルのサポートあり。 Subversion はファイルベースです。</li>
+</ul>
+
+
+<p><strong>バイナリファイル</strong>:</p>
+
+<ul>
+<li>git: GNU diff と同じアルゴリズム。(訳注) '\0' 検出だと思う。</li>
+<li>subversion: svn:mime-type による。</li>
+</ul>
+
+
+<p><strong>無視ファイル</strong>:</p>
+
+<ul>
+<li>git: バージョン管理された .gitignore ファイルによる。</li>
+<li>subversion: <strong>ディレクトリごと</strong> に svn:ignore を設定。</li>
+</ul>
+</blockquote>
+
+<p>何でこうも Subversion は面倒くさいんだろうね。</p>
+
+<blockquote><p><strong>コミットを修正</strong>:</p>
+
+<ul>
+<li>git: 公開していないコミットならどんと来い。標準でサポートしてるぜ。</li>
+<li>subversion: コミットメッセージだけならプロパティの修正でできなくない。(訳注) 基本的にダメ。</li>
+</ul>
+
+
+<p><strong>ツール</strong>:</p>
+
+<ul>
+<li>git: bisect (バグの2分探索) みたいな便利なコマンドがある。</li>
+<li>subversion: 古いから周辺ツールがいろいろある。特に MS Windows なら。</li>
+</ul>
+</blockquote>
+
+<p>Subversion の GUI はさすがだ。</p>
+
+            
+
+            
+            <div id="comments">
+                <h2>コメント</h2>
+                <div id="disqus_thread"></div>
+                <script type="text/javascript" src="http://disqus.com/forums/tchaorg/embed.js"></script>
+                <noscript>
+                    <a href="http://disqus.com/forums/tchaorg/?url=ref">View the discussion thread.</a>
+                </noscript>
+                <a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+            </div>
+            
+        </div>
+
+        <script type="text/javascript"><!--
+            (function() {
+                var links = document.getElementsByTagName('a');
+                var query = '?';
+                for(var i = 0; i < links.length; i++) {
+                    if(links[i].href.indexOf('#disqus_thread') >= 0) {
+                        query += 'url' + i + '=' + encodeURIComponent(links[i].href) + '&';
+                    }
+                }
+                document.write('<script charset="utf-8" type="text/javascript" src="http://disqus.com/forums/tchaorg/get_num_replies.js' + query + '"></' + 'script>');
+            })();
+        // --></script>
+    </body>
+</html>

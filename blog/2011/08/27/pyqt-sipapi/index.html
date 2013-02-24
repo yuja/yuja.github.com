@@ -1,0 +1,118 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+    <head>
+        <title>PyQt4: これから始めるなら sip.setapi('QString', 2) しよう - tcha.org</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <link rel="stylesheet" type="text/css" href="/assets/style.css" media="screen">
+        <link rel="alternate" type="application/atom+xml" title="tcha.org Blog" href="/blog.atom">
+        <meta name="generator" content="nanoc 3.1.0">
+    </head>
+    <body>
+        <div id="sitenav">
+            <a href="/blog/">Blog</a>
+            | <a href="/about/">About</a>
+        </div>
+        <div id="main">
+            
+            <div id="breadcrumbs"><a href="/">tcha.org</a> » <a href="/blog/">Blog</a> »</div>
+            
+
+            
+<h1>PyQt4: これから始めるなら sip.setapi('QString', 2) しよう</h1>
+
+
+
+
+<address class="head">
+    2011 年 8 月 27 日
+    <a href="http://b.hatena.ne.jp/append?http://tcha.org/blog/2011/08/27/pyqt-sipapi/"><img src="http://b.hatena.ne.jp/images/append.gif" width="16" height="12" alt="はてなブックマークへ追加" title="はてなブックマークへ追加"></a>
+<a href="http://b.hatena.ne.jp/entry/http://tcha.org/blog/2011/08/27/pyqt-sipapi/"><img src="http://b.hatena.ne.jp/entry/image/http://tcha.org/blog/2011/08/27/pyqt-sipapi/" alt="はてなブックマーク - PyQt4: これから始めるなら sip.setapi('QString', 2) しよう" title="はてなブックマーク - PyQt4: これから始めるなら sip.setapi('QString', 2) しよう"></a>
+
+    <a href="http://delicious.com/save" onclick="window.open('http://delicious.com/save?v=5&noui&jump=close&url='+encodeURIComponent('http://tcha.org/blog/2011/08/27/pyqt-sipapi/')+'&title='+encodeURIComponent('PyQt4: これから始めるなら sip.setapi('QString', 2) しよう'),'delicious', 'toolbar=no,width=550,height=550'); return false;"><img src="http://static.delicious.com/img/delicious.small.gif" height="10" width="10" alt="Bookmark this on Delicious" title="Bookmark this on Delicious"></a>
+
+</address>
+
+
+
+            <p><a href="http://2011.pycon.jp/program/talks#pyqtgui">PyCon JP の PyQt セッション</a>
+で、磯 蘭水さんが仰られていた「PyQt を使うなら Python 3 がオススメ」というのは、
+たぶんこのことだと思う:</p>
+
+<ul>
+<li>Python 2 の PyQt: 文字列として <code>QString</code> という専用のクラスがある (API 1)</li>
+<li>Python 3 の PyQt: 文字列は Python の <code>unicode</code> (API 2)</li>
+</ul>
+
+
+<p>この API 1 というのが曲者で、 <code>basestring -&gt; QString</code> へは自動変換してくれるのだけど、</p>
+
+<pre><code>&gt;&gt;&gt; lineedit = QLineEdit()
+&gt;&gt;&gt; lineedit.setText('http://example.net/')
+</code></pre>
+
+<p>逆は当然やってくれない:</p>
+
+<pre><code>&gt;&gt;&gt; lineedit.text()
+PyQt4.QtCore.QString(u'http://example.net/')
+&gt;&gt;&gt; lineedit.text().startswith('http://')
+Traceback (most recent call last):
+ ...
+AttributeError: 'QString' object has no attribute 'startswith'
+(ちなみに、 QString には startsWith() があります :)
+</code></pre>
+
+<p>よくはまってしまう。</p>
+
+<p>なので、これから Python 2 で PyQt4 を始めるなら、迷わず API 2 を使おう。</p>
+
+<pre><code>&gt;&gt;&gt; import sip
+&gt;&gt;&gt; sip.setapi('QString', 2)
+&gt;&gt;&gt; from PyQt4.QtGui import QApplication, QLineEdit
+&gt;&gt;&gt; app = QApplication(sys.argv)
+&gt;&gt;&gt; lineedit = QLineEdit()
+&gt;&gt;&gt; lineedit.setText('http://example.net/')
+&gt;&gt;&gt; lineedit.text()
+u'http://example.net/'
+</code></pre>
+
+<p>詳しくはこの辺を参考に。
+<code>QVariant</code> など他のクラスの話や、 Python の文字列が immutable
+であることの影響について説明されている。</p>
+
+<ul>
+<li><a href="http://www.riverbankcomputing.co.uk/static/Docs/PyQt4/html/incompatible_apis.html#ref-incompat-apis">Selecting Incompatible APIs - PyQt4</a></li>
+<li><a href="http://developer.qt.nokia.com/wiki/Differences_Between_PySide_and_PyQt">Differences Between PySide and PyQt - PySide</a></li>
+</ul>
+
+
+<p>なお、 PySide は API 2 しか実装していない。シンプルでよい。</p>
+
+            
+
+            
+            <div id="comments">
+                <h2>コメント</h2>
+                <div id="disqus_thread"></div>
+                <script type="text/javascript" src="http://disqus.com/forums/tchaorg/embed.js"></script>
+                <noscript>
+                    <a href="http://disqus.com/forums/tchaorg/?url=ref">View the discussion thread.</a>
+                </noscript>
+                <a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+            </div>
+            
+        </div>
+
+        <script type="text/javascript"><!--
+            (function() {
+                var links = document.getElementsByTagName('a');
+                var query = '?';
+                for(var i = 0; i < links.length; i++) {
+                    if(links[i].href.indexOf('#disqus_thread') >= 0) {
+                        query += 'url' + i + '=' + encodeURIComponent(links[i].href) + '&';
+                    }
+                }
+                document.write('<script charset="utf-8" type="text/javascript" src="http://disqus.com/forums/tchaorg/get_num_replies.js' + query + '"></' + 'script>');
+            })();
+        // --></script>
+    </body>
+</html>

@@ -1,0 +1,165 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+    <head>
+        <title>hgweb on nginx - Mercurial Advent Calendar 2012 - tcha.org</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <link rel="stylesheet" type="text/css" href="/assets/style.css" media="screen">
+        <link rel="alternate" type="application/atom+xml" title="tcha.org Blog" href="/blog.atom">
+        <meta name="generator" content="nanoc 3.1.0">
+    </head>
+    <body>
+        <div id="sitenav">
+            <a href="/blog/">Blog</a>
+            | <a href="/about/">About</a>
+        </div>
+        <div id="main">
+            
+            <div id="breadcrumbs"><a href="/">tcha.org</a> » <a href="/blog/">Blog</a> »</div>
+            
+
+            
+<h1>hgweb on nginx - Mercurial Advent Calendar 2012</h1>
+
+
+
+
+<address class="head">
+    2012 年 12 月 12 日
+    <a href="http://b.hatena.ne.jp/append?http://tcha.org/blog/2012/12/12/hgweb/"><img src="http://b.hatena.ne.jp/images/append.gif" width="16" height="12" alt="はてなブックマークへ追加" title="はてなブックマークへ追加"></a>
+<a href="http://b.hatena.ne.jp/entry/http://tcha.org/blog/2012/12/12/hgweb/"><img src="http://b.hatena.ne.jp/entry/image/http://tcha.org/blog/2012/12/12/hgweb/" alt="はてなブックマーク - hgweb on nginx - Mercurial Advent Calendar 2012" title="はてなブックマーク - hgweb on nginx - Mercurial Advent Calendar 2012"></a>
+
+    <a href="http://delicious.com/save" onclick="window.open('http://delicious.com/save?v=5&noui&jump=close&url='+encodeURIComponent('http://tcha.org/blog/2012/12/12/hgweb/')+'&title='+encodeURIComponent('hgweb on nginx - Mercurial Advent Calendar 2012'),'delicious', 'toolbar=no,width=550,height=550'); return false;"><img src="http://static.delicious.com/img/delicious.small.gif" height="10" width="10" alt="Bookmark this on Delicious" title="Bookmark this on Delicious"></a>
+
+</address>
+
+
+
+            <p>正直なところ、サーバー立てるの面倒ですよね。 <a href="https://bitbucket.org/">Bitbucket</a>
+を使えれば楽なのですが、しがない会社勤めだとそうも行きません。
+<a href="http://connpass.com/event/1431/">Mercurial Advent Calendar 2012</a>
+の 12 日目は、 <a href="http://wiki.nginx.org/">nginx</a> と <a href="http://projects.unbit.it/uwsgi/">uWSGI</a>
+の組み合わせでリポジトリサーバーをセットアップする話をします。</p>
+
+<h2>なぜ nginx?</h2>
+
+<p>Apache と mod_wsgi はもう見飽きたよ。</p>
+
+<h2>hgweb_wsgi.py</h2>
+
+<p>まず、最低限の WSGI アプリケーションを、例えば
+<code>/srv/hgweb/hgweb_wsgi.py</code> という名前で作ります。</p>
+
+<pre><code>from mercurial import hgweb
+application = hgweb.hgwebdir('hgweb.config')
+</code></pre>
+
+<p><code>hgweb_wsgi</code> モジュールの <code>application</code> 関数(正確に言うと <code>callable</code> なオブジェクト)
+がエントリーポイントです。</p>
+
+<p><code>hgweb.config</code> には、最低限こう書いておけばいいでしょう。
+(詳しくは <code>hg help hgweb</code> や <code>hg help hgrc</code> を見てください。)</p>
+
+<pre><code>[paths]
+/ = /srv/hg/*
+
+[web]
+push_ssl = False
+</code></pre>
+
+<p>SSL 証明書を用意できるなら <code>push_ssl = False</code> は不要です。</p>
+
+<h2>nginx の設定</h2>
+
+<p>Debian の場合は、 <code>/etc/nginx/sites-available</code> にホスト毎の設定を置きます。
+それから、 <code>/etc/nginx/sites-enabled</code> にシンボリックリンクを張ります。</p>
+
+<pre><code>server {
+    ...
+    # .css, .js, .png などは nginx に sendfile してもらう
+    location /static {
+        alias /usr/share/mercurial/templates/static;
+        expires 30d;
+    }
+
+    location / {
+        include uwsgi_params;
+        uwsgi_param SCRIPT_NAME '';  # 忘れると KeyError になるよ
+        #uwsgi_modifier1 30;
+        uwsgi_pass unix:/run/uwsgi/app/hgweb/socket;
+    }
+}
+</code></pre>
+
+<p>サブディレクトリに hgweb をマウントする場合は、
+<code>uwsgi_param SCRIPT_NAME /mount-point</code> と
+<a href="https://uwsgi-docs.readthedocs.org/en/latest/Protocol.html"><code>uwsgi_modifier1 30</code></a>
+が必要です。</p>
+
+<h2>uWSGI の設定</h2>
+
+<p>nginx で WSGI アプリケーションをホストするには、
+<a href="http://nichol.as/benchmark-of-python-web-servers">uWSGI が良さそう</a> です。</p>
+
+<p>同じように、 <code>/etc/uwsgi/apps-available</code> にアプリケーション毎の設定を置いて、
+シンボリックリンクを張ります。
+uWSGI は様々な設定ファイル形式をサポートしていますが、
+一番簡単な .ini で書きました。</p>
+
+<pre><code>[uwsgi]
+plugins = python
+module = hgweb_wsgi
+uid = hg
+gid = hg
+chown-socket = www-data:www-data
+chdir = /srv/hgweb
+#workers = 5
+#threads = 1
+</code></pre>
+
+<p>この例では、 hgweb を <code>hg</code> ユーザーで実行し、 <code>www-data</code> ユーザーの nginx が
+UNIX ドメインソケットで通信できるように設定しています。
+(Linux のソケットファイルで通信するには <code>rw</code> 権限が必要です。)</p>
+
+<p>ソケットファイル名など、基本的な設定は <code>/usr/share/uwsgi/conf/default.ini</code>
+にまとめられています。</p>
+
+<p>なお、リポジトリ毎に <code>web.encoding</code> を切り替えたければ、
+シングルスレッドにしないと上手く行きません。
+グローバルな <code>encoding</code> 変数を書き換えているためです。</p>
+
+<h2>まとめ</h2>
+
+<p>サーバーの設定はこれで終わりです。
+ここからが本題だったのですが、力尽きました。</p>
+
+<p>明日は @r_rudi さんの「リビジョン番号表示について」です。よろしくお願いします。</p>
+
+            
+
+            
+            <div id="comments">
+                <h2>コメント</h2>
+                <div id="disqus_thread"></div>
+                <script type="text/javascript" src="http://disqus.com/forums/tchaorg/embed.js"></script>
+                <noscript>
+                    <a href="http://disqus.com/forums/tchaorg/?url=ref">View the discussion thread.</a>
+                </noscript>
+                <a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+            </div>
+            
+        </div>
+
+        <script type="text/javascript"><!--
+            (function() {
+                var links = document.getElementsByTagName('a');
+                var query = '?';
+                for(var i = 0; i < links.length; i++) {
+                    if(links[i].href.indexOf('#disqus_thread') >= 0) {
+                        query += 'url' + i + '=' + encodeURIComponent(links[i].href) + '&';
+                    }
+                }
+                document.write('<script charset="utf-8" type="text/javascript" src="http://disqus.com/forums/tchaorg/get_num_replies.js' + query + '"></' + 'script>');
+            })();
+        // --></script>
+    </body>
+</html>
