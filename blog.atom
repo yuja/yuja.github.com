@@ -2,13 +2,65 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
   <id>http://tcha.org/</id>
   <title>tcha.org Blog</title>
-  <updated>2012-12-19T14:20:00Z</updated>
+  <updated>2013-12-09T14:30:00Z</updated>
   <link rel="alternate" href="http://tcha.org/"/>
   <link rel="self" href="http://tcha.org/blog.atom"/>
   <author>
     <name>Yuya Nishihara</name>
     <uri>http://tcha.org/about/</uri>
   </author>
+  <entry>
+    <id>tag:tcha.org,2013-12-09:/blog/2013/12/09/hg-python/</id>
+    <title type="html">hg.exe を Python インタプリタにする - Mercurial Advent Calendar 2013</title>
+    <published>2013-12-09T14:30:00Z</published>
+    <updated>2013-12-09T14:30:00Z</updated>
+    <link rel="alternate" href="http://tcha.org/blog/2013/12/09/hg-python/"/>
+    <content type="html">&lt;p&gt;&lt;a href="http://connpass.com/event/3950/"&gt;Mercurial Advent Calendar 2013&lt;/a&gt;
+の 9 日目です。&lt;/p&gt;
+
+&lt;p&gt;プログラムのビルドでちょっとしたテキスト処理をしたいことはよくあると思います。
+例えば、ビルド日時やリビジョン番号、その日の天気や気分を埋め込みたいとか。&lt;br/&gt;
+そんな時、 Unix であれば &lt;code&gt;sed&lt;/code&gt;, &lt;code&gt;awk&lt;/code&gt;, &lt;code&gt;perl&lt;/code&gt; など道具はいくらでもありますが、
+Windows が絡むと残念な気持ちになりますね。&lt;/p&gt;
+
+&lt;p&gt;さて、ここでもし仮に Mercurial でソースコードを管理しているのであれば、
+&lt;code&gt;hg.exe&lt;/code&gt; を使えるんじゃないでしょうか?&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;import sys
+from mercurial import cmdutil, commands
+
+commands.norepo += ' python'
+cmdtable = {}
+command = cmdutil.command(cmdtable)
+
+@command('python',
+    [('c', 'code', '', 'program passed in as string')],
+    '[-c cmd | file] [arg] ...')
+def python(ui, *pats, **opts):
+    sys.argv = list(pats)
+    ns = {'__name__': '__main__'}
+    if opts['code']:
+        sys.argv.insert(0, '-c')
+        exec opts['code'] in ns
+    elif pats:
+        execfile(pats[0], ns)
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;このエクステンションは &lt;code&gt;hg python&lt;/code&gt; コマンドを提供します。
+インストールのために稟議は不要です。&lt;/p&gt;
+
+&lt;p&gt;使い方:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code&gt;# file の SHA-1 ハッシュを生成
+hg python -c "import hashlib, sys; print hashlib.sha1(sys.stdin.read()).hexdigest()" &amp;lt; file
+# ファイルを選択
+hg python -c "from PyQt4.QtGui import *; a = QApplication([]); print QFileDialog.getOpenFileName()"
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;Makefile には &lt;code&gt;PYTHON = hg python --config extensions.python=path/to/python.py&lt;/code&gt;
+と定義しておけばいいでしょう。 GNU Make が使えるなら、すでに Unix
+ライクな環境が整ってるかもしれませんけど。&lt;/p&gt;</content>
+  </entry>
   <entry>
     <id>tag:tcha.org,2012-12-19:/blog/2012/12/19/thgitaraise/</id>
     <title type="html">TortoiseHg のエラーを出そう - TortoiseHg Advent Calendar 2012</title>
@@ -288,111 +340,5 @@ to = thg-dev@googlegroups.com
 メールを出す前にプレビューできて便利ですよ!&lt;/p&gt;
 
 &lt;p&gt;&lt;img src="/blog/2012/assets/thg-email-preview.png" alt=""&gt;&lt;/p&gt;</content>
-  </entry>
-  <entry>
-    <id>tag:tcha.org,2012-12-12:/blog/2012/12/12/hgweb/</id>
-    <title type="html">hgweb on nginx - Mercurial Advent Calendar 2012</title>
-    <published>2012-12-11T15:10:00Z</published>
-    <updated>2012-12-11T15:10:00Z</updated>
-    <link rel="alternate" href="http://tcha.org/blog/2012/12/12/hgweb/"/>
-    <content type="html">&lt;p&gt;正直なところ、サーバー立てるの面倒ですよね。 &lt;a href="https://bitbucket.org/"&gt;Bitbucket&lt;/a&gt;
-を使えれば楽なのですが、しがない会社勤めだとそうも行きません。
-&lt;a href="http://connpass.com/event/1431/"&gt;Mercurial Advent Calendar 2012&lt;/a&gt;
-の 12 日目は、 &lt;a href="http://wiki.nginx.org/"&gt;nginx&lt;/a&gt; と &lt;a href="http://projects.unbit.it/uwsgi/"&gt;uWSGI&lt;/a&gt;
-の組み合わせでリポジトリサーバーをセットアップする話をします。&lt;/p&gt;
-
-&lt;h2&gt;なぜ nginx?&lt;/h2&gt;
-
-&lt;p&gt;Apache と mod_wsgi はもう見飽きたよ。&lt;/p&gt;
-
-&lt;h2&gt;hgweb_wsgi.py&lt;/h2&gt;
-
-&lt;p&gt;まず、最低限の WSGI アプリケーションを、例えば
-&lt;code&gt;/srv/hgweb/hgweb_wsgi.py&lt;/code&gt; という名前で作ります。&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;from mercurial import hgweb
-application = hgweb.hgwebdir('hgweb.config')
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;&lt;code&gt;hgweb_wsgi&lt;/code&gt; モジュールの &lt;code&gt;application&lt;/code&gt; 関数(正確に言うと &lt;code&gt;callable&lt;/code&gt; なオブジェクト)
-がエントリーポイントです。&lt;/p&gt;
-
-&lt;p&gt;&lt;code&gt;hgweb.config&lt;/code&gt; には、最低限こう書いておけばいいでしょう。
-(詳しくは &lt;code&gt;hg help hgweb&lt;/code&gt; や &lt;code&gt;hg help hgrc&lt;/code&gt; を見てください。)&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;[paths]
-/ = /srv/hg/*
-
-[web]
-push_ssl = False
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;SSL 証明書を用意できるなら &lt;code&gt;push_ssl = False&lt;/code&gt; は不要です。&lt;/p&gt;
-
-&lt;h2&gt;nginx の設定&lt;/h2&gt;
-
-&lt;p&gt;Debian の場合は、 &lt;code&gt;/etc/nginx/sites-available&lt;/code&gt; にホスト毎の設定を置きます。
-それから、 &lt;code&gt;/etc/nginx/sites-enabled&lt;/code&gt; にシンボリックリンクを張ります。&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;server {
-    ...
-    # .css, .js, .png などは nginx に sendfile してもらう
-    location /static {
-        alias /usr/share/mercurial/templates/static;
-        expires 30d;
-    }
-
-    location / {
-        include uwsgi_params;
-        uwsgi_param SCRIPT_NAME '';  # 忘れると KeyError になるよ
-        #uwsgi_modifier1 30;
-        uwsgi_pass unix:/run/uwsgi/app/hgweb/socket;
-    }
-}
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;サブディレクトリに hgweb をマウントする場合は、
-&lt;code&gt;uwsgi_param SCRIPT_NAME /mount-point&lt;/code&gt; と
-&lt;a href="https://uwsgi-docs.readthedocs.org/en/latest/Protocol.html"&gt;&lt;code&gt;uwsgi_modifier1 30&lt;/code&gt;&lt;/a&gt;
-が必要です。&lt;/p&gt;
-
-&lt;h2&gt;uWSGI の設定&lt;/h2&gt;
-
-&lt;p&gt;nginx で WSGI アプリケーションをホストするには、
-&lt;a href="http://nichol.as/benchmark-of-python-web-servers"&gt;uWSGI が良さそう&lt;/a&gt; です。&lt;/p&gt;
-
-&lt;p&gt;同じように、 &lt;code&gt;/etc/uwsgi/apps-available&lt;/code&gt; にアプリケーション毎の設定を置いて、
-シンボリックリンクを張ります。
-uWSGI は様々な設定ファイル形式をサポートしていますが、
-一番簡単な .ini で書きました。&lt;/p&gt;
-
-&lt;pre&gt;&lt;code&gt;[uwsgi]
-plugins = python
-module = hgweb_wsgi
-uid = hg
-gid = hg
-chown-socket = www-data:www-data
-chdir = /srv/hgweb
-#workers = 5
-#threads = 1
-&lt;/code&gt;&lt;/pre&gt;
-
-&lt;p&gt;この例では、 hgweb を &lt;code&gt;hg&lt;/code&gt; ユーザーで実行し、 &lt;code&gt;www-data&lt;/code&gt; ユーザーの nginx が
-UNIX ドメインソケットで通信できるように設定しています。
-(Linux のソケットファイルで通信するには &lt;code&gt;rw&lt;/code&gt; 権限が必要です。)&lt;/p&gt;
-
-&lt;p&gt;ソケットファイル名など、基本的な設定は &lt;code&gt;/usr/share/uwsgi/conf/default.ini&lt;/code&gt;
-にまとめられています。&lt;/p&gt;
-
-&lt;p&gt;なお、リポジトリ毎に &lt;code&gt;web.encoding&lt;/code&gt; を切り替えたければ、
-シングルスレッドにしないと上手く行きません。
-グローバルな &lt;code&gt;encoding&lt;/code&gt; 変数を書き換えているためです。&lt;/p&gt;
-
-&lt;h2&gt;まとめ&lt;/h2&gt;
-
-&lt;p&gt;サーバーの設定はこれで終わりです。
-ここからが本題だったのですが、力尽きました。&lt;/p&gt;
-
-&lt;p&gt;明日は @r_rudi さんの「リビジョン番号表示について」です。よろしくお願いします。&lt;/p&gt;</content>
   </entry>
 </feed>

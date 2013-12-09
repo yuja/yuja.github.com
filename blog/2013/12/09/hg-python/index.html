@@ -1,0 +1,111 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+    <head>
+        <title>hg.exe を Python インタプリタにする - Mercurial Advent Calendar 2013 - tcha.org</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+        <link rel="stylesheet" type="text/css" href="/assets/style.css" media="screen">
+        <link rel="alternate" type="application/atom+xml" title="tcha.org Blog" href="/blog.atom">
+        <meta name="generator" content="nanoc 3.1.0">
+    </head>
+    <body>
+        <div id="sitenav">
+            <a href="/blog/">Blog</a>
+            | <a href="/about/">About</a>
+        </div>
+        <div id="main">
+            
+            <div id="breadcrumbs"><a href="/">tcha.org</a> » <a href="/blog/">Blog</a> »</div>
+            
+
+            
+<h1>hg.exe を Python インタプリタにする - Mercurial Advent Calendar 2013</h1>
+
+
+
+
+<address class="head">
+    2013 年 12 月 9 日
+    <a href="http://b.hatena.ne.jp/append?http://tcha.org/blog/2013/12/09/hg-python/"><img src="http://b.hatena.ne.jp/images/append.gif" width="16" height="12" alt="はてなブックマークへ追加" title="はてなブックマークへ追加"></a>
+<a href="http://b.hatena.ne.jp/entry/http://tcha.org/blog/2013/12/09/hg-python/"><img src="http://b.hatena.ne.jp/entry/image/http://tcha.org/blog/2013/12/09/hg-python/" alt="はてなブックマーク - hg.exe を Python インタプリタにする - Mercurial Advent Calendar 2013" title="はてなブックマーク - hg.exe を Python インタプリタにする - Mercurial Advent Calendar 2013"></a>
+
+    <a href="http://delicious.com/save" onclick="window.open('http://delicious.com/save?v=5&noui&jump=close&url='+encodeURIComponent('http://tcha.org/blog/2013/12/09/hg-python/')+'&title='+encodeURIComponent('hg.exe を Python インタプリタにする - Mercurial Advent Calendar 2013'),'delicious', 'toolbar=no,width=550,height=550'); return false;"><img src="http://static.delicious.com/img/delicious.small.gif" height="10" width="10" alt="Bookmark this on Delicious" title="Bookmark this on Delicious"></a>
+
+</address>
+
+
+
+            <p><a href="http://connpass.com/event/3950/">Mercurial Advent Calendar 2013</a>
+の 9 日目です。</p>
+
+<p>プログラムのビルドでちょっとしたテキスト処理をしたいことはよくあると思います。
+例えば、ビルド日時やリビジョン番号、その日の天気や気分を埋め込みたいとか。<br/>
+そんな時、 Unix であれば <code>sed</code>, <code>awk</code>, <code>perl</code> など道具はいくらでもありますが、
+Windows が絡むと残念な気持ちになりますね。</p>
+
+<p>さて、ここでもし仮に Mercurial でソースコードを管理しているのであれば、
+<code>hg.exe</code> を使えるんじゃないでしょうか?</p>
+
+<pre><code>import sys
+from mercurial import cmdutil, commands
+
+commands.norepo += ' python'
+cmdtable = {}
+command = cmdutil.command(cmdtable)
+
+@command('python',
+    [('c', 'code', '', 'program passed in as string')],
+    '[-c cmd | file] [arg] ...')
+def python(ui, *pats, **opts):
+    sys.argv = list(pats)
+    ns = {'__name__': '__main__'}
+    if opts['code']:
+        sys.argv.insert(0, '-c')
+        exec opts['code'] in ns
+    elif pats:
+        execfile(pats[0], ns)
+</code></pre>
+
+<p>このエクステンションは <code>hg python</code> コマンドを提供します。
+インストールのために稟議は不要です。</p>
+
+<p>使い方:</p>
+
+<pre><code># file の SHA-1 ハッシュを生成
+hg python -c "import hashlib, sys; print hashlib.sha1(sys.stdin.read()).hexdigest()" &lt; file
+# ファイルを選択
+hg python -c "from PyQt4.QtGui import *; a = QApplication([]); print QFileDialog.getOpenFileName()"
+</code></pre>
+
+<p>Makefile には <code>PYTHON = hg python --config extensions.python=path/to/python.py</code>
+と定義しておけばいいでしょう。 GNU Make が使えるなら、すでに Unix
+ライクな環境が整ってるかもしれませんけど。</p>
+
+            
+
+            
+            <div id="comments">
+                <h2>コメント</h2>
+                <div id="disqus_thread"></div>
+                <script type="text/javascript" src="http://disqus.com/forums/tchaorg/embed.js"></script>
+                <noscript>
+                    <a href="http://disqus.com/forums/tchaorg/?url=ref">View the discussion thread.</a>
+                </noscript>
+                <a href="http://disqus.com" class="dsq-brlink">blog comments powered by <span class="logo-disqus">Disqus</span></a>
+            </div>
+            
+        </div>
+
+        <script type="text/javascript"><!--
+            (function() {
+                var links = document.getElementsByTagName('a');
+                var query = '?';
+                for(var i = 0; i < links.length; i++) {
+                    if(links[i].href.indexOf('#disqus_thread') >= 0) {
+                        query += 'url' + i + '=' + encodeURIComponent(links[i].href) + '&';
+                    }
+                }
+                document.write('<script charset="utf-8" type="text/javascript" src="http://disqus.com/forums/tchaorg/get_num_replies.js' + query + '"></' + 'script>');
+            })();
+        // --></script>
+    </body>
+</html>

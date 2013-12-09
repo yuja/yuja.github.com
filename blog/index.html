@@ -21,6 +21,64 @@
 
             
 <div class="section">
+    <h1><a href="/blog/2013/12/09/hg-python/">hg.exe を Python インタプリタにする - Mercurial Advent Calendar 2013</a></h1>
+    <address class="head">
+        2013 年 12 月 9 日
+        <a href="http://b.hatena.ne.jp/append?http://tcha.org/blog/2013/12/09/hg-python/"><img src="http://b.hatena.ne.jp/images/append.gif" width="16" height="12" alt="はてなブックマークへ追加" title="はてなブックマークへ追加"></a>
+<a href="http://b.hatena.ne.jp/entry/http://tcha.org/blog/2013/12/09/hg-python/"><img src="http://b.hatena.ne.jp/entry/image/http://tcha.org/blog/2013/12/09/hg-python/" alt="はてなブックマーク - hg.exe を Python インタプリタにする - Mercurial Advent Calendar 2013" title="はてなブックマーク - hg.exe を Python インタプリタにする - Mercurial Advent Calendar 2013"></a>
+
+        <a href="http://delicious.com/save" onclick="window.open('http://delicious.com/save?v=5&noui&jump=close&url='+encodeURIComponent('http://tcha.org/blog/2013/12/09/hg-python/')+'&title='+encodeURIComponent('hg.exe を Python インタプリタにする - Mercurial Advent Calendar 2013'),'delicious', 'toolbar=no,width=550,height=550'); return false;"><img src="http://static.delicious.com/img/delicious.small.gif" height="10" width="10" alt="Bookmark this on Delicious" title="Bookmark this on Delicious"></a>
+
+    </address>
+    <div><p><a href="http://connpass.com/event/3950/">Mercurial Advent Calendar 2013</a>
+の 9 日目です。</p>
+
+<p>プログラムのビルドでちょっとしたテキスト処理をしたいことはよくあると思います。
+例えば、ビルド日時やリビジョン番号、その日の天気や気分を埋め込みたいとか。<br/>
+そんな時、 Unix であれば <code>sed</code>, <code>awk</code>, <code>perl</code> など道具はいくらでもありますが、
+Windows が絡むと残念な気持ちになりますね。</p>
+
+<p>さて、ここでもし仮に Mercurial でソースコードを管理しているのであれば、
+<code>hg.exe</code> を使えるんじゃないでしょうか?</p>
+
+<pre><code>import sys
+from mercurial import cmdutil, commands
+
+commands.norepo += ' python'
+cmdtable = {}
+command = cmdutil.command(cmdtable)
+
+@command('python',
+    [('c', 'code', '', 'program passed in as string')],
+    '[-c cmd | file] [arg] ...')
+def python(ui, *pats, **opts):
+    sys.argv = list(pats)
+    ns = {'__name__': '__main__'}
+    if opts['code']:
+        sys.argv.insert(0, '-c')
+        exec opts['code'] in ns
+    elif pats:
+        execfile(pats[0], ns)
+</code></pre>
+
+<p>このエクステンションは <code>hg python</code> コマンドを提供します。
+インストールのために稟議は不要です。</p>
+
+<p>使い方:</p>
+
+<pre><code># file の SHA-1 ハッシュを生成
+hg python -c "import hashlib, sys; print hashlib.sha1(sys.stdin.read()).hexdigest()" &lt; file
+# ファイルを選択
+hg python -c "from PyQt4.QtGui import *; a = QApplication([]); print QFileDialog.getOpenFileName()"
+</code></pre>
+
+<p>Makefile には <code>PYTHON = hg python --config extensions.python=path/to/python.py</code>
+と定義しておけばいいでしょう。 GNU Make が使えるなら、すでに Unix
+ライクな環境が整ってるかもしれませんけど。</p></div>
+    <div><a href="/blog/2013/12/09/hg-python/#disqus_thread">コメント</a></div>
+</div>
+
+<div class="section">
     <h1><a href="/blog/2012/12/19/thgitaraise/">TortoiseHg のエラーを出そう - TortoiseHg Advent Calendar 2012</a></h1>
     <address class="head">
         2012 年 12 月 19 日
@@ -324,121 +382,21 @@ to = thg-dev@googlegroups.com
     <div><a href="/blog/2012/12/14/thgemail/#disqus_thread">コメント</a></div>
 </div>
 
-<div class="section">
-    <h1><a href="/blog/2012/12/12/hgweb/">hgweb on nginx - Mercurial Advent Calendar 2012</a></h1>
-    <address class="head">
-        2012 年 12 月 11 日
-        <a href="http://b.hatena.ne.jp/append?http://tcha.org/blog/2012/12/12/hgweb/"><img src="http://b.hatena.ne.jp/images/append.gif" width="16" height="12" alt="はてなブックマークへ追加" title="はてなブックマークへ追加"></a>
-<a href="http://b.hatena.ne.jp/entry/http://tcha.org/blog/2012/12/12/hgweb/"><img src="http://b.hatena.ne.jp/entry/image/http://tcha.org/blog/2012/12/12/hgweb/" alt="はてなブックマーク - hgweb on nginx - Mercurial Advent Calendar 2012" title="はてなブックマーク - hgweb on nginx - Mercurial Advent Calendar 2012"></a>
-
-        <a href="http://delicious.com/save" onclick="window.open('http://delicious.com/save?v=5&noui&jump=close&url='+encodeURIComponent('http://tcha.org/blog/2012/12/12/hgweb/')+'&title='+encodeURIComponent('hgweb on nginx - Mercurial Advent Calendar 2012'),'delicious', 'toolbar=no,width=550,height=550'); return false;"><img src="http://static.delicious.com/img/delicious.small.gif" height="10" width="10" alt="Bookmark this on Delicious" title="Bookmark this on Delicious"></a>
-
-    </address>
-    <div><p>正直なところ、サーバー立てるの面倒ですよね。 <a href="https://bitbucket.org/">Bitbucket</a>
-を使えれば楽なのですが、しがない会社勤めだとそうも行きません。
-<a href="http://connpass.com/event/1431/">Mercurial Advent Calendar 2012</a>
-の 12 日目は、 <a href="http://wiki.nginx.org/">nginx</a> と <a href="http://projects.unbit.it/uwsgi/">uWSGI</a>
-の組み合わせでリポジトリサーバーをセットアップする話をします。</p>
-
-<h2>なぜ nginx?</h2>
-
-<p>Apache と mod_wsgi はもう見飽きたよ。</p>
-
-<h2>hgweb_wsgi.py</h2>
-
-<p>まず、最低限の WSGI アプリケーションを、例えば
-<code>/srv/hgweb/hgweb_wsgi.py</code> という名前で作ります。</p>
-
-<pre><code>from mercurial import hgweb
-application = hgweb.hgwebdir('hgweb.config')
-</code></pre>
-
-<p><code>hgweb_wsgi</code> モジュールの <code>application</code> 関数(正確に言うと <code>callable</code> なオブジェクト)
-がエントリーポイントです。</p>
-
-<p><code>hgweb.config</code> には、最低限こう書いておけばいいでしょう。
-(詳しくは <code>hg help hgweb</code> や <code>hg help hgrc</code> を見てください。)</p>
-
-<pre><code>[paths]
-/ = /srv/hg/*
-
-[web]
-push_ssl = False
-</code></pre>
-
-<p>SSL 証明書を用意できるなら <code>push_ssl = False</code> は不要です。</p>
-
-<h2>nginx の設定</h2>
-
-<p>Debian の場合は、 <code>/etc/nginx/sites-available</code> にホスト毎の設定を置きます。
-それから、 <code>/etc/nginx/sites-enabled</code> にシンボリックリンクを張ります。</p>
-
-<pre><code>server {
-    ...
-    # .css, .js, .png などは nginx に sendfile してもらう
-    location /static {
-        alias /usr/share/mercurial/templates/static;
-        expires 30d;
-    }
-
-    location / {
-        include uwsgi_params;
-        uwsgi_param SCRIPT_NAME '';  # 忘れると KeyError になるよ
-        #uwsgi_modifier1 30;
-        uwsgi_pass unix:/run/uwsgi/app/hgweb/socket;
-    }
-}
-</code></pre>
-
-<p>サブディレクトリに hgweb をマウントする場合は、
-<code>uwsgi_param SCRIPT_NAME /mount-point</code> と
-<a href="https://uwsgi-docs.readthedocs.org/en/latest/Protocol.html"><code>uwsgi_modifier1 30</code></a>
-が必要です。</p>
-
-<h2>uWSGI の設定</h2>
-
-<p>nginx で WSGI アプリケーションをホストするには、
-<a href="http://nichol.as/benchmark-of-python-web-servers">uWSGI が良さそう</a> です。</p>
-
-<p>同じように、 <code>/etc/uwsgi/apps-available</code> にアプリケーション毎の設定を置いて、
-シンボリックリンクを張ります。
-uWSGI は様々な設定ファイル形式をサポートしていますが、
-一番簡単な .ini で書きました。</p>
-
-<pre><code>[uwsgi]
-plugins = python
-module = hgweb_wsgi
-uid = hg
-gid = hg
-chown-socket = www-data:www-data
-chdir = /srv/hgweb
-#workers = 5
-#threads = 1
-</code></pre>
-
-<p>この例では、 hgweb を <code>hg</code> ユーザーで実行し、 <code>www-data</code> ユーザーの nginx が
-UNIX ドメインソケットで通信できるように設定しています。
-(Linux のソケットファイルで通信するには <code>rw</code> 権限が必要です。)</p>
-
-<p>ソケットファイル名など、基本的な設定は <code>/usr/share/uwsgi/conf/default.ini</code>
-にまとめられています。</p>
-
-<p>なお、リポジトリ毎に <code>web.encoding</code> を切り替えたければ、
-シングルスレッドにしないと上手く行きません。
-グローバルな <code>encoding</code> 変数を書き換えているためです。</p>
-
-<h2>まとめ</h2>
-
-<p>サーバーの設定はこれで終わりです。
-ここからが本題だったのですが、力尽きました。</p>
-
-<p>明日は @r_rudi さんの「リビジョン番号表示について」です。よろしくお願いします。</p></div>
-    <div><a href="/blog/2012/12/12/hgweb/#disqus_thread">コメント</a></div>
-</div>
-
 
 <h1>古い記事</h1>
 <ul>
+    
+    <li>
+        <a href="/blog/2012/12/12/hgweb/">hgweb on nginx - Mercurial Advent Calendar 2012</a>
+        <address>
+            2012 年 12 月 12 日
+            <a href="http://b.hatena.ne.jp/append?http://tcha.org/blog/2012/12/12/hgweb/"><img src="http://b.hatena.ne.jp/images/append.gif" width="16" height="12" alt="はてなブックマークへ追加" title="はてなブックマークへ追加"></a>
+<a href="http://b.hatena.ne.jp/entry/http://tcha.org/blog/2012/12/12/hgweb/"><img src="http://b.hatena.ne.jp/entry/image/http://tcha.org/blog/2012/12/12/hgweb/" alt="はてなブックマーク - hgweb on nginx - Mercurial Advent Calendar 2012" title="はてなブックマーク - hgweb on nginx - Mercurial Advent Calendar 2012"></a>
+
+            <a href="http://delicious.com/save" onclick="window.open('http://delicious.com/save?v=5&noui&jump=close&url='+encodeURIComponent('http://tcha.org/blog/2012/12/12/hgweb/')+'&title='+encodeURIComponent('hgweb on nginx - Mercurial Advent Calendar 2012'),'delicious', 'toolbar=no,width=550,height=550'); return false;"><img src="http://static.delicious.com/img/delicious.small.gif" height="10" width="10" alt="Bookmark this on Delicious" title="Bookmark this on Delicious"></a>
+
+        </address>
+    </li>
     
     <li>
         <a href="/blog/2012/12/11/planforrcs/">Plan for RCS - Mercurial Advent Calendar 2012</a>
@@ -616,18 +574,6 @@ UNIX ドメインソケットで通信できるように設定しています。
 <a href="http://b.hatena.ne.jp/entry/http://tcha.org/blog/2011/02/05/hg-named-branch-ffmerge/"><img src="http://b.hatena.ne.jp/entry/image/http://tcha.org/blog/2011/02/05/hg-named-branch-ffmerge/" alt="はてなブックマーク - Mercurial 1.8: 名前付きブランチの fast-forward マージ" title="はてなブックマーク - Mercurial 1.8: 名前付きブランチの fast-forward マージ"></a>
 
             <a href="http://delicious.com/save" onclick="window.open('http://delicious.com/save?v=5&noui&jump=close&url='+encodeURIComponent('http://tcha.org/blog/2011/02/05/hg-named-branch-ffmerge/')+'&title='+encodeURIComponent('Mercurial 1.8: 名前付きブランチの fast-forward マージ'),'delicious', 'toolbar=no,width=550,height=550'); return false;"><img src="http://static.delicious.com/img/delicious.small.gif" height="10" width="10" alt="Bookmark this on Delicious" title="Bookmark this on Delicious"></a>
-
-        </address>
-    </li>
-    
-    <li>
-        <a href="/blog/2010/12/05/text-supremacy/">テキスト至上主義</a>
-        <address>
-            2010 年 12 月 5 日
-            <a href="http://b.hatena.ne.jp/append?http://tcha.org/blog/2010/12/05/text-supremacy/"><img src="http://b.hatena.ne.jp/images/append.gif" width="16" height="12" alt="はてなブックマークへ追加" title="はてなブックマークへ追加"></a>
-<a href="http://b.hatena.ne.jp/entry/http://tcha.org/blog/2010/12/05/text-supremacy/"><img src="http://b.hatena.ne.jp/entry/image/http://tcha.org/blog/2010/12/05/text-supremacy/" alt="はてなブックマーク - テキスト至上主義" title="はてなブックマーク - テキスト至上主義"></a>
-
-            <a href="http://delicious.com/save" onclick="window.open('http://delicious.com/save?v=5&noui&jump=close&url='+encodeURIComponent('http://tcha.org/blog/2010/12/05/text-supremacy/')+'&title='+encodeURIComponent('テキスト至上主義'),'delicious', 'toolbar=no,width=550,height=550'); return false;"><img src="http://static.delicious.com/img/delicious.small.gif" height="10" width="10" alt="Bookmark this on Delicious" title="Bookmark this on Delicious"></a>
 
         </address>
     </li>
