@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="generator" content="pandoc">
+  <meta name="dcterms.date" content="2019-10-26">
+  <title>Rusty CPython Iterator</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+  <link rel="stylesheet" href="https://revealjs.com/css/reveal.css">
+  <style type="text/css">
+      code{white-space: pre-wrap;}
+      span.smallcaps{font-variant: small-caps;}
+      span.underline{text-decoration: underline;}
+      div.column{display: inline-block; vertical-align: top; width: 50%;}
+  </style>
+  <style type="text/css">
+a.sourceLine { display: inline-block; line-height: 1.25; }
+a.sourceLine { pointer-events: none; color: inherit; text-decoration: inherit; }
+a.sourceLine:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode { white-space: pre; position: relative; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+code.sourceCode { white-space: pre-wrap; }
+a.sourceLine { text-indent: -1em; padding-left: 1em; }
+}
+pre.numberSource a.sourceLine
+  { position: relative; left: -4em; }
+pre.numberSource a.sourceLine::before
+  { content: attr(title);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; pointer-events: all; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {  }
+@media screen {
+a.sourceLine::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="https://revealjs.com/css/theme/beige.css" id="theme">
+  <!-- Printing and PDF exports -->
+  <script>
+    var link = document.createElement( 'link' );
+    link.rel = 'stylesheet';
+    link.type = 'text/css';
+    link.href = window.location.search.match( /print-pdf/gi ) ? 'https://revealjs.com/css/print/pdf.css' : 'https://revealjs.com/css/print/paper.css';
+    document.getElementsByTagName( 'head' )[0].appendChild( link );
+  </script>
+  <!--[if lt IE 9]>
+  <script src="https://revealjs.com/lib/js/html5shiv.js"></script>
+  <![endif]-->
+  <style>
+    .reveal h1 {
+        font-size: 2em;
+        text-shadow: none;
+    }
+  
+    .reveal p.subtitle {
+        font-family: "Mikachan", sans-serif;
+    }
+  
+    .reveal p.subtitle, .reveal p.date {
+        font-size: 0.6em;
+        text-align: center;
+        color: #60a0b0;
+    }
+  
+    .reveal h2 {
+        font-size: 1.5em;
+    }
+  
+    .reveal p {
+        text-align: justify;
+    }
+  
+    .reveal section img {
+        border: none;
+    }
+  
+    .reveal section img.align-left {
+        float: left;
+    }
+  
+    .reveal section img.align-right {
+        float: right;
+    }
+  
+    div.sourceCode {
+        margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+<section id="title-slide">
+  <h1 class="title">Rusty CPython Iterator</h1>
+  <p class="subtitle">Python のイテレーターと Rust の借用</p>
+  <p class="date">2019-10-26</p>
+</section>
+
+<section id="who-am-i" class="slide level2">
+<h2>Who am I?</h2>
+<p><img data-src="me.jpg" alt="image" class="align-left" /></p>
+<ul>
+<li><p>Yuya Nishihara</p>
+<p>twitter: @yujauja</p></li>
+<li>Embedded software engineer</li>
+<li><p><img data-src="hg.png" alt="image" class="align-right" /></p>
+<p>Mercurial committer</p>
+<div>
+<ul>
+<li class="fragment">DVCS implemented in Python
+<ul>
+<li class="fragment">with C</li>
+<li class="fragment">and Rust</li>
+</ul></li>
+</ul>
+</div></li>
+</ul>
+</section>
+<section id="rust-python-bindings" class="slide level2">
+<h2>Rust-Python Bindings</h2>
+<p>Two major crates:</p>
+<p><img data-src="crates.png" alt="image" /></p>
+<p>PyO3 <em>"minimum required Rust version is 1.37.0-nightly"</em></p>
+</section>
+<section id="rust-cpython-basics" class="slide level2">
+<h2>rust-cpython Basics</h2>
+<div class="sourceCode" id="cb1"><pre class="sourceCode rust"><code class="sourceCode rust"><a class="sourceLine" id="cb1-1" title="1"><span class="pp">py_class!</span>(class IntSet |py| <span class="op">{</span></a>
+<a class="sourceLine" id="cb1-2" title="2">    data hash_set: RefCell&lt;HashSet&lt;<span class="dt">i32</span>&gt;&gt;;</a>
+<a class="sourceLine" id="cb1-3" title="3"><span class="op">}</span>);</a></code></pre></div>
+<p>which (basically) generates:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode rust"><code class="sourceCode rust"><a class="sourceLine" id="cb2-1" title="1"><span class="kw">struct</span> IntSet <span class="op">{</span> ...: *<span class="kw">mut</span> <span class="pp">ffi::</span>PyObject <span class="op">}</span></a>
+<a class="sourceLine" id="cb2-2" title="2"></a>
+<a class="sourceLine" id="cb2-3" title="3"><span class="kw">impl</span> IntSet <span class="op">{</span></a>
+<a class="sourceLine" id="cb2-4" title="4">    <span class="co">// data accessor</span></a>
+<a class="sourceLine" id="cb2-5" title="5">    <span class="kw">fn</span> hash_set&lt;<span class="ot">&#39;a</span>&gt;(&amp;<span class="ot">&#39;a</span> <span class="kw">self</span>, py: Python&lt;<span class="ot">&#39;a</span>&gt;)</a>
+<a class="sourceLine" id="cb2-6" title="6">       -&gt; &amp;<span class="ot">&#39;a</span> RefCell&lt;HashSet&lt;<span class="dt">i32</span>&gt;&gt; <span class="op">{</span> ... <span class="op">}</span></a>
+<a class="sourceLine" id="cb2-7" title="7"><span class="op">}</span></a></code></pre></div>
+</section>
+<section class="slide level2">
+
+<div class="sourceCode" id="cb3"><pre class="sourceCode rust"><code class="sourceCode rust"><a class="sourceLine" id="cb3-1" title="1"><span class="kw">struct</span> IntSet <span class="op">{</span> ...: *<span class="kw">mut</span> <span class="pp">ffi::</span>PyObject <span class="op">}</span></a>
+<a class="sourceLine" id="cb3-2" title="2"></a>
+<a class="sourceLine" id="cb3-3" title="3"><span class="kw">impl</span> IntSet <span class="op">{</span></a>
+<a class="sourceLine" id="cb3-4" title="4">    <span class="kw">fn</span> hash_set&lt;<span class="ot">&#39;a</span>&gt;(&amp;<span class="ot">&#39;a</span> <span class="kw">self</span>, py: Python&lt;<span class="ot">&#39;a</span>&gt;)</a>
+<a class="sourceLine" id="cb3-5" title="5">       -&gt; &amp;<span class="ot">&#39;a</span> RefCell&lt;HashSet&lt;<span class="dt">i32</span>&gt;&gt; <span class="op">{</span> ... <span class="op">}</span></a>
+<a class="sourceLine" id="cb3-6" title="6"><span class="op">}</span></a></code></pre></div>
+<ul>
+<li>All data backed by CPython memory (i.e. reference counted.)</li>
+<li>Any data field must be <code>Send + 'static</code>,</li>
+<li><code>py: Python&lt;'a&gt;</code> (<code>!Sync</code> nor <code>!Send</code>) marker guarantees GIL acquired,</li>
+<li>so that <code>IntSet</code> can be <code>Send</code> and <code>Sync</code>.</li>
+</ul>
+</section>
+<section id="iterator" class="slide level2">
+<h2>Iterator</h2>
+<div class="line-block">We need iterator!<br />
+Both Rust and Python have.</div>
+</section>
+<section class="slide level2">
+
+<p>Python iterator</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode python"><code class="sourceCode python"><a class="sourceLine" id="cb4-1" title="1">s <span class="op">=</span> IntSet(...)</a>
+<a class="sourceLine" id="cb4-2" title="2"><span class="cf">for</span> e <span class="kw">in</span> s:  <span class="co"># iter(s) =&gt; IntSetIter</span></a>
+<a class="sourceLine" id="cb4-3" title="3">    ...</a></code></pre></div>
+<p>over Rust collection:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode rust"><code class="sourceCode rust"><a class="sourceLine" id="cb5-1" title="1"><span class="pp">py_class!</span>(class IntSetIter |py| <span class="op">{</span></a>
+<a class="sourceLine" id="cb5-2" title="2">    data iter: RefCell&lt;Iter&lt;<span class="ot">&#39;_</span>, <span class="dt">i32</span>&gt;&gt;;  <span class="co">// doesn&#39;t compile</span></a>
+<a class="sourceLine" id="cb5-3" title="3"></a>
+<a class="sourceLine" id="cb5-4" title="4">    def __next__(&amp;<span class="kw">self</span>) -&gt; PyResult&lt;<span class="dt">Option</span>&lt;PyInt&gt;&gt; <span class="op">{</span></a>
+<a class="sourceLine" id="cb5-5" title="5">        <span class="kw">self</span>.iter(py).borrow().next()</a>
+<a class="sourceLine" id="cb5-6" title="6">    <span class="op">}</span></a>
+<a class="sourceLine" id="cb5-7" title="7"><span class="op">}</span>)</a></code></pre></div>
+<p>but...</p>
+</section>
+<section id="the-problem" class="slide level2">
+<h2>The Problem</h2>
+<p><code>&lt;'a&gt;</code> cannot live in the Python world.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode rust"><code class="sourceCode rust"><a class="sourceLine" id="cb6-1" title="1">hash_set.iter()</a>
+<a class="sourceLine" id="cb6-2" title="2">    : <span class="kw">fn</span>(&amp;<span class="ot">&#39;a</span> <span class="kw">self</span>) -&gt; Iter&lt;<span class="ot">&#39;a</span>, <span class="dt">i32</span>&gt;</a></code></pre></div>
+</section>
+<section id="someone-says" class="slide level2">
+<h2>Someone says</h2>
+<p>but <code>&lt;'static&gt;</code> can!!</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode rust"><code class="sourceCode rust"><a class="sourceLine" id="cb7-1" title="1">hash_set.iter()</a>
+<a class="sourceLine" id="cb7-2" title="2">    : <span class="kw">fn</span>(&amp;<span class="ot">&#39;static</span> <span class="kw">self</span>) -&gt; Iter&lt;<span class="ot">&#39;static</span>, <span class="dt">i32</span>&gt;</a></code></pre></div>
+</section>
+<section id="unsafe-ptr" class="slide level2">
+<h2><code>unsafe { &amp;*ptr }</code></h2>
+</section>
+<section id="the-idea" class="slide level2">
+<h2>The idea</h2>
+<p>Cheated lifetime so the iterator can (out)live in the Python world.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode rust"><code class="sourceCode rust"><a class="sourceLine" id="cb8-1" title="1"><span class="kw">let</span> hash_set: &amp;<span class="ot">&#39;a</span> RefCell&lt;HashSet&lt;<span class="dt">i32</span>&gt;&gt; = <span class="kw">self</span>.hash_set(py);</a>
+<a class="sourceLine" id="cb8-2" title="2"><span class="kw">let</span> ptr: *<span class="kw">mut</span> HashSet&lt;<span class="dt">i32</span>&gt; = hash_set.as_ptr();</a>
+<a class="sourceLine" id="cb8-3" title="3"><span class="kw">let</span> static_ref: &amp;<span class="ot">&#39;static</span> HashSet&lt;<span class="dt">i32</span>&gt; = <span class="kw">unsafe</span> <span class="op">{</span> &amp;*ptr <span class="op">}</span>;</a>
+<a class="sourceLine" id="cb8-4" title="4"><span class="kw">let</span> static_iter: Iter&lt;<span class="ot">&#39;static</span>, <span class="dt">i32</span>&gt; = static_ref.iter();</a></code></pre></div>
+</section>
+<section id="how-to-make-it-safe" class="slide level2">
+<h2>How to make it safe?</h2>
+<div class="sourceCode" id="cb9"><pre class="sourceCode rust"><code class="sourceCode rust"><a class="sourceLine" id="cb9-1" title="1"><span class="co">// &amp;&#39;a -&gt; &amp;&#39;static</span></a>
+<a class="sourceLine" id="cb9-2" title="2"><span class="kw">unsafe</span> <span class="op">{</span> &amp;*ptr <span class="op">}</span></a></code></pre></div>
+<p>Things to consider:</p>
+<ul>
+<li>Real object lifetime</li>
+<li>Multi-threading stuff</li>
+<li>Mutation of underlying object</li>
+<li>Safe interface on top of these three</li>
+</ul>
+</section>
+<section id="object-lifetime" class="slide level2">
+<h2>Object lifetime</h2>
+<p>Incref the owner PyObject and keep it.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode rust"><code class="sourceCode rust"><a class="sourceLine" id="cb10-1" title="1"><span class="kw">struct</span> PyLeaked&lt;T&gt; <span class="op">{</span></a>
+<a class="sourceLine" id="cb10-2" title="2">    owner: PyObject,</a>
+<a class="sourceLine" id="cb10-3" title="3">    data: T,  <span class="co">// T: Iter&lt;&#39;static, i32&gt;</span></a>
+<a class="sourceLine" id="cb10-4" title="4">    ...</a>
+<a class="sourceLine" id="cb10-5" title="5"><span class="op">}</span></a>
+<a class="sourceLine" id="cb10-6" title="6"></a>
+<a class="sourceLine" id="cb10-7" title="7">PyLeaked <span class="op">{</span></a>
+<a class="sourceLine" id="cb10-8" title="8">    owner: owner.clone_ref(py),</a>
+<a class="sourceLine" id="cb10-9" title="9">    data: static_ref.iter(),</a>
+<a class="sourceLine" id="cb10-10" title="10"><span class="op">}</span></a></code></pre></div>
+</section>
+<section id="multi-threading-stuff" class="slide level2">
+<h2>Multi-threading stuff</h2>
+<p>Easy. Just require GIL for any operation.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode rust"><code class="sourceCode rust"><a class="sourceLine" id="cb11-1" title="1"><span class="kw">let</span> leaked_iter: PyLeaked&lt;Iter&lt;<span class="ot">&#39;static</span>, <span class="dt">i32</span>&gt;&gt;;</a>
+<a class="sourceLine" id="cb11-2" title="2"></a>
+<a class="sourceLine" id="cb11-3" title="3"><span class="kw">fn</span> __next__&lt;<span class="ot">&#39;a</span>&gt;(&amp;<span class="ot">&#39;a</span> <span class="kw">self</span>, py: Python&lt;<span class="ot">&#39;a</span>&gt;) ... <span class="op">{</span></a>
+<a class="sourceLine" id="cb11-4" title="4">    <span class="kw">let</span> <span class="kw">mut</span> iter = leaked_iter.try_borrow_mut(py);</a>
+<a class="sourceLine" id="cb11-5" title="5">                        <span class="co">// not try_borrow_mut()</span></a>
+<a class="sourceLine" id="cb11-6" title="6">    iter.next()</a>
+<a class="sourceLine" id="cb11-7" title="7"><span class="op">}</span></a></code></pre></div>
+</section>
+<section id="mutation-1" class="slide level2">
+<h2>Mutation #1</h2>
+<p>Invalidate references when underlying object mutated.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode rust"><code class="sourceCode rust"><a class="sourceLine" id="cb12-1" title="1"><span class="kw">struct</span> IntSet <span class="op">{</span> hash_set: PySharedRefCell&lt;HashSet&lt;<span class="dt">i32</span>&gt;&gt; <span class="op">}</span></a>
+<a class="sourceLine" id="cb12-2" title="2"><span class="kw">struct</span> IntSetIter <span class="op">{</span> leaked_iter: PyLeaked&lt;Iter&lt;<span class="ot">&#39;static</span>, <span class="dt">i32</span>&gt;&gt; <span class="op">}</span></a>
+<a class="sourceLine" id="cb12-3" title="3"></a>
+<a class="sourceLine" id="cb12-4" title="4">leaked_iter = hash_set.do_some_weird_thing();</a>
+<a class="sourceLine" id="cb12-5" title="5">              <span class="co">// remember generation</span></a>
+<a class="sourceLine" id="cb12-6" title="6"><span class="kw">impl</span> IntSet <span class="op">{</span> <span class="kw">fn</span> add(...) <span class="op">{</span></a>
+<a class="sourceLine" id="cb12-7" title="7">    <span class="kw">self</span>.hash_set(py).borrow_mut(); <span class="op">}</span> <span class="op">}</span>  <span class="co">// generation += 1</span></a>
+<a class="sourceLine" id="cb12-8" title="8"><span class="kw">impl</span> IntSetIter <span class="op">{</span> <span class="kw">fn</span> __next__(...) <span class="op">{</span></a>
+<a class="sourceLine" id="cb12-9" title="9">    <span class="kw">self</span>.leaked_iter(py).try_borrow_mut(py); <span class="op">}</span> <span class="op">}</span></a>
+<a class="sourceLine" id="cb12-10" title="10">                         <span class="co">// compare generation values</span></a></code></pre></div>
+<div class="sourceCode" id="cb13"><pre class="sourceCode python"><code class="sourceCode python"><a class="sourceLine" id="cb13-1" title="1"><span class="co"># for e in int_set:</span></a>
+<a class="sourceLine" id="cb13-2" title="2">int_set_iter <span class="op">=</span> <span class="bu">iter</span>(int_set)  <span class="co"># generation = 3</span></a>
+<a class="sourceLine" id="cb13-3" title="3"><span class="cf">while</span> <span class="va">True</span>:</a>
+<a class="sourceLine" id="cb13-4" title="4">    e <span class="op">=</span> <span class="bu">next</span>(int_set_iter)  <span class="co"># compare generation values</span></a>
+<a class="sourceLine" id="cb13-5" title="5">    int_set.add(<span class="dv">1</span>)  <span class="co"># generation = 3 + 1</span></a></code></pre></div>
+</section>
+<section id="mutation-2" class="slide level2">
+<h2>Mutation #2</h2>
+<div class="line-block">Prevent mutation while iterator is borrowed,<br />
+just like <code>RefCell</code>.</div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode rust"><code class="sourceCode rust"><a class="sourceLine" id="cb14-1" title="1"><span class="kw">let</span> hash_set: PySharedRefCell&lt;HashSet&lt;<span class="dt">i32</span>&gt;&gt;;</a>
+<a class="sourceLine" id="cb14-2" title="2"><span class="kw">let</span> leaked_iter: PyLeaked&lt;Iter&lt;<span class="ot">&#39;static</span>, <span class="dt">i32</span>&gt;&gt;;</a>
+<a class="sourceLine" id="cb14-3" title="3"></a>
+<a class="sourceLine" id="cb14-4" title="4"><span class="op">{</span></a>
+<a class="sourceLine" id="cb14-5" title="5">    <span class="kw">let</span> <span class="kw">mut</span> iter = leaked_iter.try_borrow_mut(py)?;</a>
+<a class="sourceLine" id="cb14-6" title="6">                            <span class="co">// borrow += 1</span></a>
+<a class="sourceLine" id="cb14-7" title="7">    hash_set.borrow_mut();  <span class="co">// panics if borrow &gt; 0</span></a>
+<a class="sourceLine" id="cb14-8" title="8">    <span class="co">// drop(iter): borrow -= 1</span></a>
+<a class="sourceLine" id="cb14-9" title="9"><span class="op">}</span></a>
+<a class="sourceLine" id="cb14-10" title="10">hash_set.borrow_mut();  <span class="co">// okay</span></a></code></pre></div>
+</section>
+<section id="safe-interface" class="slide level2">
+<h2>Safe interface</h2>
+<div class="sourceCode" id="cb15"><pre class="sourceCode rust"><code class="sourceCode rust"><a class="sourceLine" id="cb15-1" title="1"><span class="kw">fn</span> map&lt;U&gt;(<span class="kw">self</span>, py: Python,</a>
+<a class="sourceLine" id="cb15-2" title="2">          f: <span class="kw">impl</span> <span class="bu">FnOnce</span>(&amp;<span class="ot">&#39;static</span> T) -&gt; U) -&gt; PyLeaked&lt;U&gt;</a>
+<a class="sourceLine" id="cb15-3" title="3"><span class="kw">fn</span> try_borrow_mut(&amp;<span class="kw">mut</span> <span class="kw">self</span>, py: Python)</a>
+<a class="sourceLine" id="cb15-4" title="4">                  -&gt; PyResult&lt;PyLeakedRefMut&lt;T&gt;&gt;</a></code></pre></div>
+<div class="sourceCode" id="cb16"><pre class="sourceCode rust"><code class="sourceCode rust"><a class="sourceLine" id="cb16-1" title="1"><span class="pp">py_class!</span>(class IntSet |py| <span class="op">{</span></a>
+<a class="sourceLine" id="cb16-2" title="2">    data hash_set: PySharedRefCell&lt;HashSet&lt;<span class="dt">i32</span>&gt;&gt;;</a>
+<a class="sourceLine" id="cb16-3" title="3"><span class="op">}</span>);</a>
+<a class="sourceLine" id="cb16-4" title="4"></a>
+<a class="sourceLine" id="cb16-5" title="5"><span class="kw">let</span> hash_set = <span class="kw">self</span>.shared_hash_set(py);</a>
+<a class="sourceLine" id="cb16-6" title="6"><span class="kw">let</span> leaked = hash_set.leak_immutable();</a>
+<a class="sourceLine" id="cb16-7" title="7"><span class="kw">let</span> leaked_iter = leaked.map(py, |s| s.iter());</a>
+<a class="sourceLine" id="cb16-8" title="8"></a>
+<a class="sourceLine" id="cb16-9" title="9">def __next__(&amp;<span class="kw">self</span>) -&gt; PyResult&lt;<span class="dt">Option</span>&lt;PyInt&gt;&gt; <span class="op">{</span></a>
+<a class="sourceLine" id="cb16-10" title="10">    <span class="kw">let</span> <span class="kw">mut</span> iter = <span class="kw">self</span>.leaked_iter(py).try_borrow_mut(py)?;</a>
+<a class="sourceLine" id="cb16-11" title="11">    iter.next()</a>
+<a class="sourceLine" id="cb16-12" title="12"><span class="op">}</span></a></code></pre></div>
+</section>
+<section id="safe-interface-is-not-safe" class="slide level2">
+<h2>Safe interface is not safe</h2>
+<div class="sourceCode" id="cb17"><pre class="sourceCode rust"><code class="sourceCode rust"><a class="sourceLine" id="cb17-1" title="1"><span class="kw">unsafe</span> <span class="kw">fn</span> map&lt;U&gt;(<span class="kw">self</span>, py: Python,</a>
+<a class="sourceLine" id="cb17-2" title="2">                 f: <span class="kw">impl</span> <span class="bu">FnOnce</span>(&amp;<span class="ot">&#39;static</span> T) -&gt; U) -&gt; PyLeaked&lt;U&gt;</a>
+<a class="sourceLine" id="cb17-3" title="3"><span class="kw">unsafe</span> <span class="kw">fn</span> try_borrow_mut(&amp;<span class="kw">mut</span> <span class="kw">self</span>, py: Python)</a>
+<a class="sourceLine" id="cb17-4" title="4">                         -&gt; PyResult&lt;PyLeakedRefMut&lt;T&gt;&gt;</a></code></pre></div>
+<p>because the lifetime is cheated.</p>
+<p>Many ways to obtain the underlying <code>&amp;'static</code>:</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode rust"><code class="sourceCode rust"><a class="sourceLine" id="cb18-1" title="1"><span class="kw">let</span> outer: &amp;<span class="ot">&#39;static</span> ...;</a>
+<a class="sourceLine" id="cb18-2" title="2">leaked.map(py, |s| <span class="op">{</span> outer = s <span class="op">}</span>);</a>
+<a class="sourceLine" id="cb18-3" title="3">leaked_iter.try_borrow_mut(py)?.as_slice();</a>
+<a class="sourceLine" id="cb18-4" title="4">    <span class="co">// slice::Iter::as_slice(&amp;self) -&gt; &amp;&#39;a [T]</span></a>
+<a class="sourceLine" id="cb18-5" title="5">leaked_iter.try_borrow_mut(py)?.next();</a>
+<a class="sourceLine" id="cb18-6" title="6">    <span class="co">// slice::Iter::next(&amp;mut self) -&gt; Option&lt;&amp;&#39;a T&gt;</span></a></code></pre></div>
+</section>
+<section id="lifetime-is-hard" class="slide level2">
+<h2>Lifetime is hard</h2>
+<div class="fragment">
+<div class="line-block"><code>&amp;'static</code> is not a silver bullet.</div>
+</div>
+</section>
+<section id="source-code" class="slide level2">
+<h2>Source code</h2>
+<div class="sourceCode" id="cb19"><pre class="sourceCode sh"><code class="sourceCode bash"><a class="sourceLine" id="cb19-1" title="1">$ <span class="ex">hg</span> clone https://www.mercurial-scm.org/repo/hg-committed/</a></code></pre></div>
+<ul>
+<li><a href="https://www.mercurial-scm.org/repo/hg-committed/file/tip/rust/hg-cpython/src/ref_sharing.rs">https://www.mercurial-scm.org/repo/hg-committed/file/tip/rust/hg-cpython/src/ref_sharing.rs</a></li>
+<li>will hopefully be upstreamed soon!</li>
+</ul>
+</section>
+<section id="further-reading" class="slide level2">
+<h2>Further Reading</h2>
+<ul>
+<li><p>Sharing references between Python and Rust, by Raphaël Gomès</p>
+<p><a href="https://raphaelgomes.dev/blog/articles/2019-07-01-sharing-references-between-python-and-rust.html">https://raphaelgomes.dev/blog/articles/2019-07-01-sharing-references-between-python-and-rust.html</a></p></li>
+<li><p>PyO3 and rust-cpython</p>
+<p><a href="https://pyo3.rs/master/rust_cpython.html">https://pyo3.rs/master/rust_cpython.html</a></p></li>
+</ul>
+</section>
+    </div>
+  </div>
+
+  <script src="https://revealjs.com/lib/js/head.min.js"></script>
+  <script src="https://revealjs.com/js/reveal.js"></script>
+
+  <script>
+
+      // Full list of configuration options available at:
+      // https://github.com/hakimel/reveal.js#configuration
+      Reveal.initialize({
+        // Push each slide change to the browser history
+        history: true,
+        // Transition style
+        transition: 'none', // none/fade/slide/convex/concave/zoom
+
+        // Optional reveal.js plugins
+        dependencies: [
+          { src: 'https://revealjs.com/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+          { src: 'https://revealjs.com/plugin/zoom-js/zoom.js', async: true },
+          { src: 'https://revealjs.com/plugin/notes/notes.js', async: true }
+        ]
+      });
+    </script>
+    </body>
+</html>
